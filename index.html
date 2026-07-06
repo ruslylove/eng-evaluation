@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ยื่นขอค่าตอบแทนพิเศษ — คณะวิศวกรรมศาสตร์ มจพ.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#590F16; --blue:#921823; --blue-lt:#FAF0F1; --blue-md:#B52635;
+  --bg:#F4F6FA; --card:#fff; --border:#D4DCE8; --border-lt:#E8EDF5;
+  --text:#1A2535; --muted:#6B7A90; --muted-lt:#9AAABB;
+  --pass:#1E8A5E; --pass-bg:#EAF7F1; --pass-border:#A8DFC8;
+  --fail:#B52A2A; --fail-bg:#FCECEA; --fail-border:#F5C0BC;
+  --warn:#8A6200; --warn-bg:#FFF8E1; --warn-border:#F5D87C;
+  --purple-bg:#F3EEF8; --purple:#6B21A8;
+  --green-bg:#EAF7F1; --green:#1E8A5E;
+  --ff-th:'Sarabun',sans-serif; --ff-en:'Inter',sans-serif;
+  --r:4px; --r-lg:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.07);
+  --shadow-md:0 2px 8px rgba(0,0,0,.10);
+}
+html{font-size:15px}
+body{font-family:var(--ff-th);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;
+  padding:0 24px;height:52px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--blue)}
+.topbar-logo{font-family:var(--ff-en);font-weight:700;font-size:13px;letter-spacing:.08em;color:#fff;text-decoration:none}
+.tb-div{width:1px;height:20px;background:rgba(255,255,255,.2)}
+.topbar-title{font-size:13px;color:rgba(255,255,255,.75);font-weight:400}
+.topbar-user{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.85)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-md);display:flex;
+  align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+  font-family:var(--ff-en)}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:260px 1fr;gap:20px;
+  max-width:1080px;margin:24px auto;padding:0 20px;align-items:start}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.sidebar{position:sticky;top:72px;display:flex;flex-direction:column;gap:12px}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.sbox-hdr{background:var(--navy);color:#fff;font-size:10px;font-family:var(--ff-en);
+  font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:7px 14px}
+
+/* Steps nav */
+.steps-nav{padding:8px 0}
+.step-item{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;
+  transition:background .12s;font-size:13px;border-left:3px solid transparent}
+.step-item:hover{background:var(--blue-lt)}
+.step-item.active{background:var(--blue-lt);color:var(--blue);font-weight:500;border-left-color:var(--blue)}
+.step-item.done{color:var(--pass)}
+.step-num{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-family:var(--ff-en);font-weight:700;flex-shrink:0;transition:all .15s}
+.step-item.active .step-num{background:var(--blue);border-color:var(--blue);color:#fff}
+.step-item.done  .step-num{background:var(--pass);border-color:var(--pass);color:#fff}
+
+/* Scorecard */
+.scorecard{padding:12px 14px}
+.sc-status{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--r);
+  font-size:13px;font-weight:500;margin-bottom:12px;border:1px solid transparent}
+.sc-status.pass{background:var(--pass-bg);color:var(--pass);border-color:var(--pass-border)}
+.sc-status.fail{background:var(--fail-bg);color:var(--fail);border-color:var(--fail-border)}
+.sc-status.pending{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-border)}
+.sc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pass .sc-dot{background:var(--pass)}
+.fail .sc-dot{background:var(--fail)}
+.pending .sc-dot{background:#F8B400}
+
+.tier-tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--ff-en)}
+.tier-tbl th{text-align:left;padding:4px 6px;font-size:10px;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1.5px solid var(--border)}
+.tier-tbl td{padding:5px 6px;border-bottom:1px solid var(--border-lt);vertical-align:middle}
+.tier-tbl tr:last-child td{border-bottom:none}
+.tier-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px;
+  background:var(--blue-lt);color:var(--blue)}
+.tier-cnt{font-weight:700;text-align:right;color:var(--pass)}
+
+/* Rate info */
+.rate-info{padding:12px 14px;font-size:12px;line-height:1.8;color:var(--muted)}
+.rate-row{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 0;border-bottom:1px solid var(--border-lt)}
+.rate-row:last-child{border-bottom:none}
+.rate-pos{font-weight:500;color:var(--text)}
+.rate-amt{font-family:var(--ff-en);font-size:12px;font-weight:600;color:var(--blue)}
+.rate-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+/* ── Main ────────────────────────────────────────────────────── */
+.main{display:flex;flex-direction:column;gap:18px}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow);overflow:hidden}
+.card-hdr{display:flex;align-items:center;gap:10px;padding:13px 20px;
+  border-bottom:1px solid var(--border);background:#FAFBFD}
+.card-num{font-family:var(--ff-en);font-size:11px;font-weight:700;color:var(--blue);
+  letter-spacing:.05em;min-width:22px}
+.card-hdr h2{font-size:14px;font-weight:600;color:var(--navy);flex:1}
+.card-sub{font-size:12px;color:var(--muted)}
+.card-body{padding:20px}
+
+/* Profile grid */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);font-family:var(--ff-en)}
+.field-value{font-size:14px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r);color:var(--text)}
+.field-value.mono{font-family:var(--ff-en);font-size:13px}
+
+/* Section divider */
+.sdiv{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:700;
+  font-family:var(--ff-en);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin:18px 0 14px}
+.sdiv::before,.sdiv::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Form */
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-row:last-child{margin-bottom:0}
+.form-label{font-size:12px;font-weight:600;color:var(--navy)}
+.form-label .req{color:var(--fail);margin-left:2px}
+.form-hint{font-size:11px;color:var(--muted);margin-top:2px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);
+  border-radius:var(--r);font-family:var(--ff-th);font-size:14px;color:var(--text);
+  background:var(--card);outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(146,24,35,.10)}
+input[type=number]{font-family:var(--ff-en)}
+input[type=checkbox],input[type=radio]{width:16px;height:16px;flex-shrink:0}
+textarea{resize:vertical;min-height:60px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.form-grid-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:0 16px}
+.period-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.period-bar select{max-width:190px}
+
+/* Publication list */
+.pub-list{display:flex;flex-direction:column;gap:10px}
+.pub-item{border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:border-color .15s}
+.pub-item:focus-within{border-color:var(--blue)}
+.pub-item-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#FAFBFD;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.pub-index{font-family:var(--ff-en);font-size:11px;font-weight:700;color:var(--muted);min-width:20px}
+.pub-title-preview{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pub-tier-tag{font-size:10px;font-weight:700;font-family:var(--ff-en);padding:2px 7px;
+  border-radius:2px;background:var(--blue-lt);color:var(--blue);white-space:nowrap;flex-shrink:0}
+.pub-tier-tag.q1{background:#EAF7F1;color:var(--pass)}
+.pub-tier-tag.q2{background:#EAF7F1;color:#1E6B8A}
+.pub-tier-tag.q3{background:var(--warn-bg);color:var(--warn)}
+.pub-tier-tag.warn{background:var(--warn-bg);color:var(--warn)}
+.pub-tier-tag.purple{background:var(--purple-bg);color:var(--purple)}
+.pub-tier-tag.green{background:var(--green-bg);color:var(--green)}
+.pub-toggle{font-size:12px;color:var(--muted);transition:transform .15s}
+.pub-item.open .pub-toggle{transform:rotate(180deg)}
+.btn-rm-pub{background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:15px;padding:0 3px;line-height:1;transition:color .12s}
+.btn-rm-pub:hover{color:var(--fail)}
+.pub-item-body{display:none;padding:16px}
+.pub-item.open .pub-item-body{display:block}
+
+/* Role option */
+.role-group{display:flex;gap:8px;flex-wrap:wrap}
+.role-opt{display:flex;align-items:center;gap:6px;padding:6px 12px;
+  border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:13px;
+  transition:all .12s;user-select:none}
+.role-opt:has(input:checked){border-color:var(--blue);background:var(--blue-lt);color:var(--blue);font-weight:500}
+.role-opt input{width:14px;height:14px;accent-color:var(--blue)}
+
+/* Add pub button */
+.btn-add-pub{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;
+  background:none;border:1.5px dashed var(--border);border-radius:var(--r-lg);color:var(--blue);
+  font-size:13px;font-weight:500;cursor:pointer;width:100%;transition:all .15s;
+  font-family:var(--ff-th);margin-top:8px}
+.btn-add-pub:hover{border-color:var(--blue);background:var(--blue-lt)}
+
+/* ── Attachment zone ─────────────────────────────────────────── */
+.attach-hdr{display:flex;align-items:baseline;gap:8px;margin:16px 0 10px;
+  padding-top:14px;border-top:1px solid var(--border)}
+.attach-hdr-title{font-size:10px;font-weight:700;font-family:var(--ff-en);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}
+.attach-hdr-sub{font-size:11px;color:var(--muted)}
+.attach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px}
+.attach-slot{border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;
+  background:var(--card);display:flex;flex-direction:column;gap:3px;transition:border-color .15s}
+.attach-slot.done{border-color:var(--pass);background:var(--pass-bg)}
+.attach-slot.missing{border-color:var(--fail-border);background:var(--fail-bg)}
+.attach-slot-top{display:flex;align-items:flex-start;gap:7px}
+.attach-icon{font-size:15px;flex-shrink:0;line-height:1.3}
+.attach-info{flex:1}
+.attach-label{font-size:12px;font-weight:600;color:var(--navy);line-height:1.3}
+.attach-req{font-size:10px;padding:1px 5px;border-radius:2px;margin-left:4px;vertical-align:middle}
+.req-badge{background:var(--fail-bg);color:var(--fail)}
+.opt-badge{background:var(--bg);color:var(--muted)}
+.attach-hint{font-size:11px;color:var(--muted);line-height:1.4;margin:3px 0 6px}
+.attach-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;
+  border:1.5px dashed var(--border);border-radius:var(--r);font-size:11px;color:var(--blue);
+  cursor:pointer;background:none;transition:all .12s;font-family:var(--ff-th);position:relative}
+.attach-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.attach-btn:hover{border-color:var(--blue);background:var(--blue-lt)}
+.file-chip{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--ff-en);
+  background:var(--blue-lt);color:var(--blue);padding:3px 7px;border-radius:2px;margin-top:2px;
+  word-break:break-all}
+.file-rm{background:none;border:none;color:var(--blue);cursor:pointer;font-size:13px;
+  line-height:1;padding:0;flex-shrink:0}
+.attach-empty-hint{font-size:12px;color:var(--muted);padding:8px 0;font-style:italic}
+
+/* Checklist progress (step 3 only) */
+.checklist-progress{border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
+.cl-hdr{padding:10px 14px;background:#FAFBFD;border-bottom:1px solid var(--border);
+  font-size:12px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px}
+.cl-row{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border-lt);font-size:13px}
+.cl-row:last-child{border-bottom:none}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.cl-body{flex:1}
+.cl-label{font-size:13px;font-weight:500}
+.cl-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.cl-status{font-size:11px;font-weight:600;flex-shrink:0;padding:2px 8px;border-radius:2px}
+.cl-ok{background:var(--pass-bg);color:var(--pass)}
+.cl-missing{background:var(--fail-bg);color:var(--fail)}
+.cl-opt{background:var(--bg);color:var(--muted)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r);
+  font-size:14px;font-weight:500;cursor:pointer;border:1.5px solid transparent;
+  font-family:var(--ff-th);transition:all .15s;text-decoration:none}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#155191}
+.btn-outline{background:#fff;color:var(--navy);border-color:var(--border)}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-submit{background:var(--navy);color:#fff;border-color:var(--navy);padding:11px 28px;font-size:15px}
+.btn-submit:hover{background:#162e4a}
+.btn-submit:disabled{opacity:.45;cursor:not-allowed}
+.action-bar{display:flex;justify-content:flex-end;gap:10px;padding-top:16px;
+  border-top:1px solid var(--border);margin-top:4px}
+
+/* Notice */
+.notice{display:flex;gap:10px;padding:11px 14px;border-radius:var(--r);font-size:13px;
+  border:1px solid transparent;margin-bottom:16px}
+.notice.info{background:var(--blue-lt);border-color:#B8CDE8;color:var(--navy)}
+.notice.warn{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
+.notice.pass{background:var(--pass-bg);border-color:var(--pass-border);color:var(--pass)}
+.notice-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* Review table */
+.rev-table{width:100%;border-collapse:collapse;font-size:13px}
+.rev-table th{text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--border);
+  font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);font-family:var(--ff-en);background:#FAFBFD}
+.rev-table td{padding:9px 10px;border-bottom:1px solid var(--border-lt);vertical-align:top}
+.rev-table tr:last-child td{border-bottom:none}
+.elg-yes{color:var(--pass);font-weight:700}
+.elg-no{color:var(--fail);font-weight:700}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:var(--r-lg);width:540px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md);
+  transform:translateY(8px);transition:transform .2s}
+.modal-bg.open .modal{transform:translateY(0)}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);background:var(--navy);color:#fff}
+.modal-hdr h3{font-size:14px;font-weight:600}
+.btn-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;line-height:1}
+.modal-body{padding:20px}
+
+/* Toast */
+.toasts{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:300}
+.toast{padding:11px 16px;border-radius:var(--r);font-size:13px;font-weight:500;
+  background:var(--navy);color:#fff;box-shadow:var(--shadow-md);animation:slideIn .2s ease;max-width:320px}
+.toast.success{background:var(--pass)}
+.toast.error{background:var(--fail)}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:800px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .profile-grid,.form-grid-2,.form-grid-3{grid-template-columns:1fr}
+  .attach-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0ms!important;animation-duration:0ms!important}}
+
+/* ── Scorecard progress bar ─── */
+.sc-prog-wrap{margin-bottom:10px}
+.sc-prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;font-family:var(--ff-en)}
+.sc-prog-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.sc-prog-fill{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.sc-warn{font-size:11px;color:var(--fail);margin-top:6px;line-height:1.5}
+
+/* ── Personal criteria checklist ──────────────────────────── */
+.crit-position {
+  font-size:12px; font-weight:600; color:var(--navy);
+  padding:8px 14px 4px; border-bottom:1px solid var(--border-lt);
+  display:flex; align-items:center; gap:6px;
+}
+.crit-position .pos-tag {
+  font-family:var(--ff-en); font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:2px;
+  background:var(--blue-lt); color:var(--blue);
+}
+.crit-items { padding:8px 14px 12px; display:flex; flex-direction:column; gap:6px; }
+.crit-item {
+  border:1px solid var(--border); border-radius:var(--r);
+  background:var(--card); overflow:hidden;
+  transition:border-color .15s;
+}
+.crit-item.done   { border-color:var(--pass); }
+.crit-item.partial{ border-color:#F8B400; }
+.crit-item.empty  { border-color:var(--border); }
+.crit-item-row {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 10px;
+}
+.crit-check {
+  width:16px; height:16px; border-radius:50%; border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; flex-shrink:0; transition:all .15s;
+}
+.done   .crit-check { background:var(--pass);  border-color:var(--pass);  color:#fff; }
+.partial .crit-check{ background:#F8B400; border-color:#F8B400; color:#fff; }
+.crit-item-info { flex:1; }
+.crit-item-label { font-size:12px; font-weight:500; color:var(--text); line-height:1.3; }
+.crit-item-count {
+  font-family:var(--ff-en); font-size:11px;
+  color:var(--muted); margin-top:1px;
+}
+.done .crit-item-count { color:var(--pass); font-weight:600; }
+.partial .crit-item-count { color:#8A6200; font-weight:600; }
+/* mini progress bar inside each row */
+.crit-mini-bar {
+  height:3px; background:var(--border-lt); border-radius:2px;
+  overflow:hidden; margin-top:4px;
+}
+.crit-mini-fill { height:100%; border-radius:2px; transition:width .3s; }
+.done    .crit-mini-fill { background:var(--pass); }
+.partial .crit-mini-fill { background:#F8B400; }
+.empty   .crit-mini-fill { background:var(--fail); }
+.crit-note {
+  font-size:11px; color:var(--muted); line-height:1.4;
+  padding:0 10px 8px; margin-top:-2px;
+}
+.crit-rate-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 14px; border-bottom:1px solid var(--border-lt);
+  font-size:12px;
+}
+.crit-rate-row:last-child { border-bottom:none; }
+.crit-rate-lbl { color:var(--text); }
+.crit-rate-val { font-family:var(--ff-en); font-weight:600; color:var(--blue); font-size:12px; }
+/* Progress rows in lower box */
+.prog-row {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; margin-bottom:7px;
+}
+.prog-row:last-child { margin-bottom:0; }
+.prog-label { flex:1; color:var(--text); line-height:1.3; font-size:11px; }
+.prog-fraction { font-family:var(--ff-en); font-size:11px; font-weight:600; flex-shrink:0; }
+.prog-fraction.done    { color:var(--pass); }
+.prog-fraction.partial { color:#8A6200; }
+.prog-fraction.empty   { color:var(--muted); }
+
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <a class="topbar-logo" href="#">ENG · KMUTNB</a>
+  <div class="tb-div"></div>
+  <span class="topbar-title">ระบบยื่นขอค่าตอบแทนพิเศษตามเกณฑ์มาตรฐานภาระงานวิชาการ</span>
+  <div class="topbar-user">
+    <div class="avatar" id="av">RS</div>
+    <span id="user-name">รุสลี่ สุทธวีร์กูล</span>
+  </div>
+</header>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <div class="sbox">
+      <div class="sbox-hdr">ขั้นตอน</div>
+      <nav class="steps-nav">
+        <div class="step-item active" data-step="1" onclick="goStep(1)">
+          <div class="step-num">1</div><span>ข้อมูลส่วนตัว</span>
+        </div>
+        <div class="step-item" data-step="2" onclick="goStep(2)">
+          <div class="step-num">2</div><span>ผลงานทางวิชาการ</span>
+        </div>
+        <div class="step-item" data-step="3" onclick="goStep(3)">
+          <div class="step-num">3</div><span>ตรวจสอบและยื่น</span>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Personal criteria checklist -->
+    <div class="sbox">
+      <div class="sbox-hdr" id="criteria-hdr">เกณฑ์ขั้นต่ำของฉัน</div>
+      <div id="criteria-body" style="padding:12px 14px">
+        <p style="font-size:12px;color:var(--muted);line-height:1.6">
+          กรอกข้อมูลในขั้นตอนที่ 1 เพื่อดูเกณฑ์เฉพาะของตำแหน่งคุณ
+        </p>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="sbox">
+      <div class="sbox-hdr">ความก้าวหน้า</div>
+      <div style="padding:12px 14px">
+        <div class="sc-status pending" id="sc-status">
+          <div class="sc-dot"></div>
+          <span id="sc-text">รอกรอกผลงาน</span>
+        </div>
+        <div id="sc-prog-wrap" style="display:none;margin-top:8px">
+          <div class="sc-prog-row"><span>ภาพรวม</span><span id="sc-pct">0%</span></div>
+          <div class="sc-prog-bg"><div class="sc-prog-fill" id="sc-bar" style="width:0%"></div></div>
+        </div>
+        <div id="sc-progress-rows" style="margin-top:8px"></div>
+        <div class="sc-warn" id="sc-warn" style="display:none;margin-top:6px"></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Step 1: ข้อมูลส่วนตัว -->
+    <section class="card" id="step-1">
+      <div class="card-hdr">
+        <span class="card-num">01</span>
+        <h2>ข้อมูลผู้ยื่น</h2>
+        <span class="card-sub">ดึงจากฐานข้อมูลบุคลากรอัตโนมัติ</span>
+      </div>
+      <div class="card-body">
+
+        <div class="notice info">
+          <span class="notice-icon">ℹ</span>
+          <span>ข้อมูลด้านล่างดึงจากระบบบุคลากรของมหาวิทยาลัย หากมีข้อผิดพลาดกรุณาติดต่องานบุคลากร</span>
+        </div>
+
+        <div class="profile-grid">
+          <div class="field">
+            <span class="field-label">Email</span>
+            <div class="field-value mono" id="pf-email">ruslee.s@eng.kmutnb.ac.th</div>
+          </div>
+          <div class="field">
+            <span class="field-label">ตำแหน่งทางวิชาการ <span style="color:var(--fail)">*</span></span>
+            <select id="pf-position" onchange="updateStep1()">
+              <option value="อาจารย์">อาจารย์</option>
+              <option value="ผู้ช่วยศาสตราจารย์" selected>ผู้ช่วยศาสตราจารย์</option>
+              <option value="รองศาสตราจารย์">รองศาสตราจารย์</option>
+              <option value="ศาสตราจารย์">ศาสตราจารย์</option>
+              <option value="ศาสตราจารย์ต่อเวลา">ศาสตราจารย์ต่อเวลา</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">ชื่อ-นามสกุล (ไทย)</span>
+            <div class="field-value" id="pf-name-th">รุสลี่ สุทธวีร์กูล</div>
+          </div>
+          <div class="field">
+            <span class="field-label">ชื่อ-นามสกุล (EN)</span>
+            <div class="field-value mono" id="pf-name-en">Ruslee Sutthaweekul</div>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <span class="field-label">ภาควิชา / สังกัด</span>
+            <div class="field-value" id="pf-dept">ภาควิชาวิศวกรรมไฟฟ้าและคอมพิวเตอร์</div>
+          </div>
+        </div>
+
+        <div class="sdiv">ข้อมูลที่ต้องกรอกเพิ่มเติม</div>
+
+        <div class="profile-grid">
+          <div class="field">
+            <span class="field-label">ประเภทบุคลากร <span style="color:var(--fail)">*</span></span>
+            <select id="pf-staff-type" onchange="updateStep1()">
+              <option value="">-- เลือก --</option>
+              <option value="ข้าราชการ" selected>ข้าราชการพลเรือนในสถาบันอุดมศึกษา</option>
+              <option value="พนักงาน">พนักงานมหาวิทยาลัย</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">วันที่รับแต่งตั้งตำแหน่ง <span style="color:var(--fail)">*</span></span>
+            <input type="date" id="pf-appoint" value="2017-10-01" onchange="updateStep1()">
+            <span class="form-hint">วันที่ได้รับแต่งตั้งเป็น ผศ./รศ./ศ. ปัจจุบัน</span>
+          </div>
+          <div class="field">
+            <span class="field-label">กลุ่มสาขาวิชา <span style="color:var(--fail)">*</span></span>
+            <select id="pf-field-group" onchange="updateStep1()">
+              <option value="sci_tech" selected>กลุ่ม 1 วิทยาศาสตร์/เทคโนโลยี/วิศวกรรมศาสตร์</option>
+              <option value="biz_social">กลุ่ม 2 บริหารธุรกิจ/มนุษยศาสตร์/สังคมศาสตร์</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">บทบาทหน้าที่ <span style="color:var(--fail)">*</span></span>
+            <select id="pf-is-admin" onchange="updateStep1()">
+              <option value="academic" selected>อาจารย์ประจำ (ไม่มีตำแหน่งบริหาร)</option>
+              <option value="admin">ผู้บริหาร (คณบดี/รองคณบดี/ผู้ช่วยคณบดี/หัวหน้าภาค/ฯลฯ)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sdiv">ระยะเวลาที่ยื่น</div>
+        <div class="period-bar">
+          <span style="font-size:13px;color:var(--muted)">ปีงบประมาณ พ.ศ.</span>
+          <select id="fiscal-year">
+            <option value="2568" selected>2568</option>
+            <option value="2567">2567</option>
+          </select>
+          <span style="font-size:13px;color:var(--muted)">รอบที่</span>
+          <select id="round">
+            <option value="1" selected>1 — ส่งภายใน 31 ส.ค.</option>
+            <option value="2">2 — ส่งภายใน 31 ต.ค.</option>
+          </select>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="goStep(2)">ถัดไป →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: ผลงาน -->
+    <section class="card" id="step-2" style="display:none">
+      <div class="card-hdr">
+        <span class="card-num">02</span>
+        <h2>ผลงานทางวิชาการ</h2>
+        <span class="card-sub">กรอกเฉพาะผลงานที่ใช้ประกอบการขอรับค่าตอบแทน</span>
+      </div>
+      <div class="card-body">
+        <div class="notice warn">
+          <span class="notice-icon">⚠</span>
+          <span>ต้องเป็น <strong>First author</strong> หรือ <strong>Corresponding author</strong> เท่านั้น
+          และต้องแนบหลักฐานให้ครบตามที่กำหนดในแต่ละประเภทผลงาน</span>
+        </div>
+        <div class="pub-list" id="pub-list"></div>
+        <button class="btn-add-pub" onclick="addPub()">
+          <span style="font-size:18px;line-height:1">＋</span> เพิ่มผลงาน
+        </button>
+        <div class="action-bar">
+          <button class="btn btn-outline" onclick="goStep(1)">← ย้อนกลับ</button>
+          <button class="btn btn-primary" onclick="goStep(3)">ถัดไป →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: ตรวจสอบและยื่น -->
+    <section class="card" id="step-3" style="display:none">
+      <div class="card-hdr">
+        <span class="card-num">03</span>
+        <h2>ตรวจสอบและยื่น</h2>
+        <span class="card-sub">ตรวจสอบความถูกต้องก่อนส่ง</span>
+      </div>
+      <div class="card-body">
+
+        <div class="sdiv">สรุปผลงานที่ยื่น</div>
+        <div id="rev-summary" style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">ยังไม่มีผลงาน</div>
+
+        <div class="sdiv">เอกสารแนบที่จำเป็น (checklist เอกสารแนบ ๑ หน้า 3)</div>
+        <div id="doc-checklist"></div>
+
+        <div class="sdiv">การรับรอง</div>
+        <div style="font-size:13px;line-height:2;text-align:left">
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-bottom:8px">
+            <input type="checkbox" id="chk-truth" style="margin-top:4px;accent-color:var(--blue)" onchange="updateSubmitBtn()">
+            <span>ข้าพเจ้าขอรับรองว่าผลงานที่แจ้งไว้ข้างต้นเป็นความจริงทุกประการ
+            และไม่เป็นผลงานที่ใช้ขอกำหนดตำแหน่งทางวิชาการในปีงบประมาณเดียวกัน
+            <strong>หากตรวจสอบพบว่าไม่เป็นความจริง ข้าพเจ้ายินยอมให้มหาวิทยาลัยเรียกเงินที่ได้รับไปทั้งหมดคืน</strong></span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">
+            <input type="checkbox" id="chk-unique" style="margin-top:4px;accent-color:var(--blue)" onchange="updateSubmitBtn()">
+            <span>ผลงานแต่ละรายการนำมาใช้ประกอบการขอรับเงินค่าตอบแทนพิเศษนี้เพียงครั้งเดียว</span>
+          </label>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-outline" onclick="goStep(2)">← ย้อนกลับ</button>
+          <button class="btn btn-outline" onclick="openPreview()">📄 ดูตัวอย่างบันทึกข้อความ</button>
+          <button class="btn btn-submit" id="btn-submit" disabled onclick="doSubmit()">ยื่นคำขอ</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal preview -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>ตัวอย่างบันทึกข้อความ (เอกสารแนบ ๑)</h3>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div style="padding:0 20px 20px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">ปิด</button>
+      <button class="btn btn-primary" onclick="dlDocx()">⬇ ดาวน์โหลด .docx</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+//  MOCK DATA  (replace calls with google.script.run.withSuccessHandler)
+// ════════════════════════════════════════════════════════════════════════
+const MOCK_PROFILE = {
+  email:        'ruslee.s@eng.kmutnb.ac.th',
+  fullNameTh:   'รุสลี่ สุทธวีร์กูล',
+  fullNameEn:   'Ruslee Sutthaweekul',
+  position:     'ผู้ช่วยศาสตราจารย์',
+  divNameTh:    'ภาควิชาวิศวกรรมไฟฟ้าและคอมพิวเตอร์',
+  divShortName: 'ECE',
+};
+
+// ════════════════════════════════════════════════════════════════════════
+//  ELIGIBILITY ENGINE  —  ข้อบังคับ มจพ. ฉบับที่ 2  พ.ศ. 2568
+//  Structure: CRITERIA[fieldGroup][outputType][position] = [minQ, regular, admin]
+//  Mixed-portfolio: contribution = count/target, sum >= 1.0 = pass
+// ════════════════════════════════════════════════════════════════════════
+
+const CRITERIA_LABELS = {
+  scopus:         'Scopus',
+  review_article: 'Review Article / Book Chapter (Scopus)',
+  full_proc:      'Full Proceedings (Scopus)',
+  patent:         'สิทธิบัตร',
+  petty_pat:      'อนุสิทธิบัตร',
+  artwork_intl:   'ศิลปกรรม/รางวัล (นานาชาติ)',
+  artwork_nat:    'ศิลปกรรม/รางวัล (ชาติ)',
+  tci_1:          'TCI กลุ่ม 1',
+};
+
+const CRITERIA = {
+  sci_tech: {
+    scopus:         { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['Q4+',1,1], 'รองศาสตราจารย์':['Q3+',2,1], 'ศาสตราจารย์':['Q2+',3,1], 'ศาสตราจารย์ต่อเวลา':['Q2+',5,null] },
+    review_article: { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',1,1], 'รองศาสตราจารย์':['any',2,1], 'ศาสตราจารย์':['any',3,1], 'ศาสตราจารย์ต่อเวลา':null },
+    full_proc:      { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':['any',6,3], 'ศาสตราจารย์ต่อเวลา':null },
+    patent:         { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',1,1], 'รองศาสตราจารย์':['any',2,1], 'ศาสตราจารย์':['any',3,1], 'ศาสตราจารย์ต่อเวลา':null },
+    petty_pat:      { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':['any',6,3], 'ศาสตราจารย์ต่อเวลา':null },
+  },
+  biz_social: {
+    scopus:         { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['Q4+',1,1], 'รองศาสตราจารย์':['Q3+',2,1], 'ศาสตราจารย์':['Q2+',3,1], 'ศาสตราจารย์ต่อเวลา':['Q2+',5,null] },
+    review_article: { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',1,1], 'รองศาสตราจารย์':['any',2,1], 'ศาสตราจารย์':['any',3,1], 'ศาสตราจารย์ต่อเวลา':null },
+    full_proc:      { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':['any',6,3], 'ศาสตราจารย์ต่อเวลา':null },
+    artwork_intl:   { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',1,1], 'รองศาสตราจารย์':['any',2,1], 'ศาสตราจารย์':['any',3,1], 'ศาสตราจารย์ต่อเวลา':null },
+    artwork_nat:    { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':['any',6,2], 'ศาสตราจารย์ต่อเวลา':null },
+    tci_1:          { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':null, 'ศาสตราจารย์ต่อเวลา':null },
+    patent:         { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',1,1], 'รองศาสตราจารย์':['any',2,1], 'ศาสตราจารย์':['any',3,1], 'ศาสตราจารย์ต่อเวลา':null },
+    petty_pat:      { 'อาจารย์':['any',1,1], 'ผู้ช่วยศาสตราจารย์':['any',2,1], 'รองศาสตราจารย์':['any',4,2], 'ศาสตราจารย์':['any',6,3], 'ศาสตราจารย์ต่อเวลา':null },
+  },
+};
+
+// Map tier dropdown key → CRITERIA output type
+const TIER_TO_CRIT = {
+  scopus_q1:'scopus', scopus_q2:'scopus', scopus_q3:'scopus', scopus_q4:'scopus',
+  review_article:'review_article', book_chapter:'review_article',
+  full_proc:'full_proc',
+  patent:'patent', petty_pat:'petty_pat',
+  artwork_intl:'artwork_intl', artwork_nat:'artwork_nat',
+  tci_1:'tci_1',
+};
+
+// Scopus Q rank (higher=better): Q1=4, Q2=3, Q3=2, Q4=1
+function qRank(tierKey) {
+  return tierKey==='scopus_q1'?4:tierKey==='scopus_q2'?3:tierKey==='scopus_q3'?2:tierKey==='scopus_q4'?1:0;
+}
+function minQRank(minQ) {
+  if (minQ==='any') return 0;
+  var n = parseInt(minQ.replace('Q','').replace('+',''));
+  return 5 - n; // Q1->4, Q2->3, Q3->2, Q4->1
+}
+
+function computeEligibility(pubs, position, isAdmin, fieldGroup) {
+  var fg       = CRITERIA[fieldGroup] || CRITERIA.sci_tech;
+  var warnings = [];
+  var grouped  = {};
+
+  pubs.forEach(function(p) {
+    if (!p.tier || !p.role.length) return;
+    var critKey = TIER_TO_CRIT[p.tier];
+    if (!critKey) { warnings.push('ไม่รู้จัก tier: ' + p.tier); return; }
+
+    var typeCrit = fg[critKey];
+    if (!typeCrit) { warnings.push(CRITERIA_LABELS[critKey] + ' ไม่นับสำหรับกลุ่มสาขาวิชานี้'); return; }
+
+    var posCrit = typeCrit[position];
+    if (!posCrit) { warnings.push(CRITERIA_LABELS[critKey] + ' ไม่นับสำหรับตำแหน่ง ' + position); return; }
+
+    // Check Scopus quartile requirement
+    if (critKey === 'scopus') {
+      var need = minQRank(posCrit[0]);
+      var have = qRank(p.tier);
+      if (have < need) {
+        warnings.push((p.title||'ผลงาน').slice(0,30) + ': ต้องการ ' + posCrit[0] + ' ขึ้นไป');
+        return;
+      }
+    }
+    if (!grouped[critKey]) grouped[critKey] = [];
+    grouped[critKey].push(p);
+  });
+
+  var totalScore = 0;
+  var details    = [];
+  Object.keys(grouped).forEach(function(critKey) {
+    var items   = grouped[critKey];
+    var typeCrit = fg[critKey];
+    var posCrit  = typeCrit[position];
+    if (!posCrit) return;
+    var target  = isAdmin ? (posCrit[2] !== null && posCrit[2] !== undefined ? posCrit[2] : posCrit[1]) : posCrit[1];
+    var contrib = items.length / target;
+    totalScore += contrib;
+    details.push({ type:critKey, count:items.length, target:target, contribution:contrib, label:CRITERIA_LABELS[critKey]||critKey });
+  });
+
+  return { pass: totalScore >= 1.0, score: Math.min(totalScore, 9.99), details: details, warnings: warnings };
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  TIERS CONFIG
+// ════════════════════════════════════════════════════════════════════════
+const TIERS = [
+  { key:'scopus_q1',      label:'Scopus Q1',                   group:'Scopus',      tagCls:'q1'     },
+  { key:'scopus_q2',      label:'Scopus Q2',                   group:'Scopus',      tagCls:'q2'     },
+  { key:'scopus_q3',      label:'Scopus Q3',                   group:'Scopus',      tagCls:'q3'     },
+  { key:'scopus_q4',      label:'Scopus Q4',                   group:'Scopus',      tagCls:'warn'   },
+  { key:'review_article', label:'Review Article (Scopus)',      group:'Scopus',      tagCls:'q2'     },
+  { key:'book_chapter',   label:'Book Chapter (Scopus)',        group:'Scopus',      tagCls:'q2'     },
+  { key:'full_proc',      label:'Full Proceedings (Scopus)',    group:'Scopus',      tagCls:'q2'     },
+  { key:'tci_1',          label:'TCI กลุ่ม 1',                 group:'TCI',         tagCls:''       },
+  { key:'patent',         label:'สิทธิบัตร',                   group:'สิทธิบัตร',   tagCls:'purple' },
+  { key:'petty_pat',      label:'อนุสิทธิบัตร',               group:'สิทธิบัตร',   tagCls:'purple' },
+  { key:'artwork_intl',   label:'ศิลปกรรม/รางวัล (นานาชาติ)',  group:'ศิลปกรรม',   tagCls:'green'  },
+  { key:'artwork_nat',    label:'ศิลปกรรม/รางวัล (ชาติ)',      group:'ศิลปกรรม',   tagCls:'green'  },
+];
+
+const SECTIONS = [
+  { val:'1', label:'๑ — ผลงานวิจัย / ประชุม' },
+  { val:'2', label:'๒ — จากที่ปรึกษาวิทยานิพนธ์' },
+  { val:'3', label:'๓ — สิทธิบัตร / อนุสิทธิบัตร' },
+  { val:'4', label:'๔ — งานศิลปกรรม / รางวัล' },
+];
+
+const ATTACH_RULES = [
+  { key:'acceptance',    icon:'📨', label:'แบบตอบรับการตีพิมพ์',          hint:'Letter of acceptance จากวารสารหรือ proceedings', required:true,  show:function(p){return ['scopus_q1','scopus_q2','scopus_q3','scopus_q4','tci_1','full_proc','review_article','book_chapter'].includes(p.tier);} },
+  { key:'first_page',    icon:'📄', label:'หน้าแรกของผลงาน (ถ้าตีพิมพ์แล้ว)', hint:'หน้าปกหรือหน้า 1 ของบทความ', required:false, show:function(p){return ['scopus_q1','scopus_q2','scopus_q3','scopus_q4','tci_1','full_proc','review_article','book_chapter'].includes(p.tier);} },
+  { key:'db_evidence',   icon:'🔍', label:'หลักฐานปรากฏในฐานข้อมูล',       hint:'Screenshot Scopus/TCI แสดง Quartile หรือกลุ่ม TCI', required:true,  show:function(p){return ['scopus_q1','scopus_q2','scopus_q3','scopus_q4','tci_1','full_proc','review_article','book_chapter'].includes(p.tier);} },
+  { key:'patent_cert',   icon:'📜', label:'ใบรับรองสิทธิบัตร/อนุสิทธิบัตร', hint:'ใบรับรองจากกรมทรัพย์สินทางปัญญา', required:true,  show:function(p){return ['patent','petty_pat'].includes(p.tier);} },
+  { key:'artwork_cert',  icon:'🏆', label:'ใบแสดงผลงานศิลปกรรม/รางวัล',   hint:'ใบรับรองรางวัลระดับชาติ/นานาชาติ หรือใบแสดงในหอศิลป์', required:true, show:function(p){return ['artwork_intl','artwork_nat'].includes(p.tier);} },
+  { key:'author_confirm',icon:'✉️', label:'หนังสือยืนยันการเสนอผลงาน',      hint:'กรณี First/Corresponding author เป็นอาจารย์ที่มีสิทธิ์', required:false, show:function(p){return p.role.length>0&&['scopus_q1','scopus_q2','scopus_q3','scopus_q4','tci_1','full_proc'].includes(p.tier);} },
+  { key:'advisor_confirm',icon:'🎓', label:'หนังสือยืนยันการเป็นที่ปรึกษา', hint:'สำหรับผลงานหมวด ๒ จากการควบคุมวิทยานิพนธ์', required:false, show:function(p){return p.section==='2';} },
+];
+
+// ════════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════════
+var pubs = [];
+var uid  = 0;
+
+// ════════════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════════════════════
+function goStep(n) {
+  document.querySelectorAll('.step-item').forEach(function(el) {
+    var s = +el.dataset.step;
+    el.classList.toggle('active', s===n);
+    el.classList.toggle('done',   s<n);
+  });
+  ['step-1','step-2','step-3'].forEach(function(id, i) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = (i+1===n) ? 'block' : 'none';
+  });
+  if (n===3) buildReview();
+  window.scrollTo({top:60, behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  PROFILE HELPERS
+// ════════════════════════════════════════════════════════════════════════
+function getCtx() {
+  return {
+    position:   (document.getElementById('pf-position')||{}).value || (document.getElementById('pf-position')||{}).textContent || 'ผู้ช่วยศาสตราจารย์',
+    isAdmin:    (document.getElementById('pf-is-admin')||{}).value==='admin',
+    fieldGroup: (document.getElementById('pf-field-group')||{}).value||'sci_tech',
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  PUBLICATIONS
+// ════════════════════════════════════════════════════════════════════════
+function addPub() {
+  uid++;
+  pubs.push({id:uid, section:'1', title:'', authors:'', venue:'', volume:'', pages:'', year:'', tier:'', role:[], doi:'', files:{}});
+  renderPubs();
+  updateScorecard();
+  setTimeout(function(){togglePub(uid,true);}, 40);
+}
+
+function removePub(id) {
+  pubs = pubs.filter(function(p){return p.id!==id;});
+  renderPubs();
+  updateScorecard();
+}
+
+function togglePub(id, force) {
+  var el = document.getElementById('pub-'+id);
+  if (!el) return;
+  if (force!==undefined) el.classList.toggle('open', force);
+  else el.classList.toggle('open');
+}
+
+function setPubField(id, field, val) {
+  var p = pubs.find(function(p){return p.id===id;});
+  if (!p) return;
+  p[field] = val;
+  if (field==='title') {
+    var el = document.getElementById('pub-prev-'+id);
+    if (el) el.textContent = val||'(ยังไม่ได้กรอกชื่อผลงาน)';
+  }
+  if (field==='tier') {
+    var t = TIERS.find(function(t){return t.key===val;});
+    var tag = document.getElementById('pub-tag-'+id);
+    if (tag) { tag.textContent=t?t.label:''; tag.className='pub-tier-tag '+(t?t.tagCls:''); }
+    refreshAttach(id);
+  }
+  if (field==='section') refreshAttach(id);
+  if (field==='tier'||field==='role') updateScorecard();
+}
+
+function toggleRole(id, role, checked) {
+  var p = pubs.find(function(p){return p.id===id;});
+  if (!p) return;
+  if (checked) { if (!p.role.includes(role)) p.role.push(role); }
+  else p.role = p.role.filter(function(r){return r!==role;});
+  refreshAttach(id);
+  updateScorecard();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  ATTACHMENTS
+// ════════════════════════════════════════════════════════════════════════
+function refreshAttach(id) {
+  var zone = document.getElementById('attach-zone-'+id);
+  if (!zone) return;
+  var p = pubs.find(function(p){return p.id===id;});
+  zone.innerHTML = buildAttachZone(p);
+}
+
+function buildAttachZone(p) {
+  var slots = ATTACH_RULES.filter(function(r){return r.show(p);});
+  if (!slots.length) return '<p class="attach-empty-hint">เลือกฐานข้อมูลและบทบาทก่อน เพื่อแสดงรายการเอกสารแนบ</p>';
+  return slots.map(function(r) {
+    var f    = p.files[r.key];
+    var done = !!f;
+    var badge = r.required ? '<span class="attach-req req-badge">จำเป็น</span>' : '<span class="attach-req opt-badge">ถ้ามี</span>';
+    return '<div class="attach-slot '+(done?'done':r.required?'missing':'')+'" id="aslot-'+p.id+'-'+r.key+'">'
+      +'<div class="attach-slot-top"><span class="attach-icon">'+r.icon+'</span>'
+      +'<div class="attach-info"><div class="attach-label">'+r.label+badge+'</div>'
+      +'<div class="attach-hint">'+r.hint+'</div></div></div>'
+      +(done
+        ? '<div class="file-chip">📎 '+esc(f.name)+'<button class="file-rm" onclick="rmFile('+p.id+',\''+r.key+'\')">✕</button></div>'
+        : '<label class="attach-btn">เลือกไฟล์ PDF/JPG/PNG<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="pickFile('+p.id+',\''+r.key+'\',this)"></label>'
+      )+'</div>';
+  }).join('');
+}
+
+function pickFile(id, key, inp) {
+  var p = pubs.find(function(p){return p.id===id;});
+  if (!p||!inp.files.length) return;
+  p.files[key] = inp.files[0];
+  refreshAttach(id);
+}
+
+function rmFile(id, key) {
+  var p = pubs.find(function(p){return p.id===id;});
+  if (p) { delete p.files[key]; refreshAttach(id); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  RENDER PUBLICATIONS
+// ════════════════════════════════════════════════════════════════════════
+function renderPubs() {
+  var list = document.getElementById('pub-list');
+  if (!list) return;
+
+  var tierOpts = ['Scopus','TCI','สิทธิบัตร','ศิลปกรรม'].map(function(g) {
+    return '<optgroup label="'+g+'">'+TIERS.filter(function(t){return t.group===g;}).map(function(t) {
+      return '<option value="'+t.key+'">'+t.label+'</option>';
+    }).join('')+'</optgroup>';
+  }).join('');
+
+  var secOpts = SECTIONS.map(function(s){return '<option value="'+s.val+'">'+s.label+'</option>';}).join('');
+
+  list.innerHTML = pubs.map(function(p, i) {
+    var t = TIERS.find(function(t){return t.key===p.tier;});
+
+    var tierSel = tierOpts.replace('value="'+p.tier+'"', 'value="'+p.tier+'" selected');
+    var secSel  = secOpts.replace('value="'+p.section+'"', 'value="'+p.section+'" selected');
+
+    return '<div class="pub-item" id="pub-'+p.id+'">'
+      +'<div class="pub-item-hdr" onclick="togglePub('+p.id+')">'
+      +'<span class="pub-index">'+String(i+1).padStart(2,'0')+'</span>'
+      +'<span class="pub-title-preview" id="pub-prev-'+p.id+'">'+( esc(p.title)||'(ยังไม่ได้กรอกชื่อผลงาน)' )+'</span>'
+      +'<span class="pub-tier-tag '+(t?t.tagCls:'')+'" id="pub-tag-'+p.id+'">'+(t?t.label:'')+'</span>'
+      +'<button class="btn-rm-pub" onclick="event.stopPropagation();removePub('+p.id+')">✕</button>'
+      +'<span class="pub-toggle">▾</span></div>'
+
+      +'<div class="pub-item-body">'
+
+      +'<div class="form-grid-2">'
+      +'<div class="form-row"><label class="form-label">หมวดผลงาน <span class="req">*</span></label>'
+      +'<select onchange="setPubField('+p.id+',\'section\',this.value)">'+secSel+'</select></div>'
+      +'<div class="form-row"><label class="form-label">ฐานข้อมูล / ระดับ <span class="req">*</span></label>'
+      +'<select onchange="setPubField('+p.id+',\'tier\',this.value)"><option value="">-- เลือก --</option>'+tierSel+'</select></div></div>'
+
+      +'<div class="form-row"><label class="form-label">ชื่อผลงาน <span class="req">*</span></label>'
+      +'<textarea rows="2" placeholder="ชื่อบทความ / สิทธิบัตร / ผลงาน" oninput="setPubField('+p.id+',\'title\',this.value)">'+esc(p.title)+'</textarea></div>'
+
+      +'<div class="form-row"><label class="form-label">ชื่อผู้แต่งทุกคน (รูปแบบ APA) <span class="req">*</span></label>'
+      +'<input type="text" placeholder="Surname, A. B., Author, C. D., …" oninput="setPubField('+p.id+',\'authors\',this.value)" value="'+esc(p.authors)+'">'
+      +'<span class="form-hint">ใส่ชื่อตนเองในวงเล็บ เช่น (<u>Sutthaweekul, R.</u>)</span></div>'
+
+      +'<div class="form-grid-3">'
+      +'<div class="form-row"><label class="form-label">ชื่อวารสาร / งานประชุม</label><input type="text" placeholder="IEEE Trans. / ECTI-CON…" oninput="setPubField('+p.id+',\'venue\',this.value)" value="'+esc(p.venue)+'"></div>'
+      +'<div class="form-row"><label class="form-label">Vol. / ฉบับที่</label><input type="text" placeholder="Vol.12 No.3" oninput="setPubField('+p.id+',\'volume\',this.value)" value="'+esc(p.volume)+'"></div>'
+      +'<div class="form-row"><label class="form-label">ปีพิมพ์ (ค.ศ.)</label><input type="number" placeholder="2024" min="2000" max="2099" oninput="setPubField('+p.id+',\'year\',this.value)" value="'+esc(p.year)+'"></div></div>'
+
+      +'<div class="form-grid-2">'
+      +'<div class="form-row"><label class="form-label">DOI / URL</label><input type="url" placeholder="https://doi.org/10.xxxx/…" oninput="setPubField('+p.id+',\'doi\',this.value)" value="'+esc(p.doi)+'"></div>'
+      +'<div class="form-row"><label class="form-label">บทบาทผู้เขียน <span class="req">*</span></label>'
+      +'<div class="role-group" style="margin-top:4px">'
+      +'<label class="role-opt"><input type="checkbox" '+(p.role.includes('first')?'checked':'')+' onchange="toggleRole('+p.id+',\'first\',this.checked)"> First author</label>'
+      +'<label class="role-opt"><input type="checkbox" '+(p.role.includes('corr')?'checked':'')+' onchange="toggleRole('+p.id+',\'corr\',this.checked)"> Corresponding author</label>'
+      +'</div></div></div>'
+
+      +'<div class="attach-hdr"><span class="attach-hdr-title">เอกสารแนบ</span>'
+      +'<span class="attach-hdr-sub">ตามรายการในเอกสารแนบ ๑ หน้า 3</span></div>'
+      +'<div class="attach-grid" id="attach-zone-'+p.id+'">'+buildAttachZone(p)+'</div>'
+
+      +'</div></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  SCORECARD
+// ════════════════════════════════════════════════════════════════════════
+// updateStep1 — called by onchange on staff-type and appoint-date fields
+function updateStep1() { updateScorecard(); }
+
+function updateScorecard() {
+  var ctx    = getCtx();
+  var result = computeEligibility(pubs, ctx.position, ctx.isAdmin, ctx.fieldGroup);
+
+  // Support both id schemes (sc-status from new HTML, eligibility-status from old)
+  var sc     = document.getElementById('sc-status') || document.getElementById('eligibility-status');
+  var stxt   = document.getElementById('eligibility-text');
+  var tbody  = document.getElementById('tier-tbody');
+  var prog   = document.getElementById('sc-prog-wrap');
+  var bar    = document.getElementById('sc-bar');
+  var pctEl  = document.getElementById('sc-pct');
+  var warnEl = document.getElementById('sc-warn');
+
+  var hasPubs = pubs.some(function(p){return p.tier&&p.role.length;});
+
+  // Determine correct CSS class prefix from whichever element exists
+  var pfx = sc && sc.className.indexOf('scorecard-status') !== -1 ? 'scorecard-status' : 'sc-status';
+
+  buildCriteriaPanel();
+  if (!hasPubs) {
+    if (sc)    sc.className = pfx + ' pending';
+    if (stxt)  stxt.textContent = 'รอกรอกผลงาน';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--muted);font-size:12px;padding:12px 0">ยังไม่มีผลงาน</td></tr>';
+    if (prog)  prog.style.display = 'none';
+    if (warnEl) warnEl.style.display = 'none';
+    buildProgressRows([]);
+    updateSubmitBtn(result);
+    return;
+  }
+
+  var pct = Math.min(result.score * 100, 100);
+  if (prog) {
+    prog.style.display = 'block';
+    if (bar)   { bar.style.width = pct.toFixed(0)+'%'; bar.style.background = result.pass ? 'var(--pass)' : (pct>60?'#F8B400':'var(--fail)'); }
+    if (pctEl) pctEl.textContent = pct.toFixed(0)+'%';
+  }
+
+  if (sc)   sc.className = pfx + ' ' + (result.pass ? 'pass' : (result.score>0.6 ? 'pending' : 'fail'));
+  if (stxt) stxt.textContent = result.pass ? 'ผ่านเกณฑ์ (' + pct.toFixed(0) + '%)' : 'ยังไม่ผ่านเกณฑ์ (' + pct.toFixed(0) + '%)';
+
+  if (tbody) {
+    if (result.details.length) {
+      tbody.innerHTML = result.details.map(function(d) {
+        return '<tr><td><span class="tier-badge">'+d.label+'</span><br>'
+          +'<span style="font-size:10px;color:var(--muted)">'+d.count+'/'+d.target+' รายการ</span></td>'
+          +'<td class="tier-count has">'+(d.contribution*100).toFixed(0)+'%</td></tr>';
+      }).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--fail);padding:8px 0;font-size:12px">ผลงานไม่ผ่านเกณฑ์</td></tr>';
+    }
+  }
+
+  if (warnEl) {
+    if (result.warnings.length) { warnEl.style.display='block'; warnEl.innerHTML = result.warnings.map(function(w){return '⚠ '+w;}).join('<br>'); }
+    else warnEl.style.display = 'none';
+  }
+  buildProgressRows(result.details);
+
+  updateSubmitBtn(result);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  STEP 3 REVIEW
+// ════════════════════════════════════════════════════════════════════════
+function buildReview() {
+  buildRevTable();
+  buildDocChecklist();
+}
+
+function buildRevTable() {
+  var el = document.getElementById('rev-summary');
+  if (!pubs.length) { el.innerHTML='<span style="color:var(--muted)">ยังไม่มีผลงาน</span>'; return; }
+  el.innerHTML = '<table class="rev-table">'
+    +'<thead><tr><th>#</th><th>ชื่อผลงาน</th><th>ฐานข้อมูล</th><th>บทบาท</th><th>เอกสารแนบ</th><th>นับได้</th></tr></thead>'
+    +'<tbody>'+pubs.map(function(p,i){
+      var t = TIERS.find(function(t){return t.key===p.tier;});
+      var slots    = ATTACH_RULES.filter(function(r){return r.show(p);});
+      var reqSlots = slots.filter(function(r){return r.required;});
+      var filled   = reqSlots.filter(function(r){return p.files[r.key];});
+      var attachOk = filled.length===reqSlots.length;
+      var elig     = !!(p.tier && p.role.length);
+      return '<tr>'
+        +'<td style="font-family:var(--ff-en);color:var(--muted)">'+(i+1)+'</td>'
+        +'<td style="max-width:200px;font-size:12px">'+esc(p.title||'—')+'</td>'
+        +'<td><span class="tier-badge">'+(t?t.label:'—')+'</span></td>'
+        +'<td style="font-size:12px">'+(p.role.join(', ')||'—')+'</td>'
+        +'<td style="font-size:12px"><span style="color:'+(attachOk?'var(--pass)':'var(--fail)')+'">'+filled.length+'/'+reqSlots.length+' จำเป็น</span></td>'
+        +'<td class="'+(elig?'elg-yes':'elg-no')+'">'+(elig?'✓':'✕')+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function buildDocChecklist() {
+  var el = document.getElementById('doc-checklist');
+  if (!pubs.length) { if(el) el.innerHTML=''; return; }
+
+  var needed = ATTACH_RULES.map(function(rule) {
+    var matchPubs = pubs.filter(function(p){return rule.show(p);});
+    if (!matchPubs.length) return null;
+    var filled = matchPubs.filter(function(p){return p.files[rule.key];});
+    return { rule:rule, total:matchPubs.length, filled:filled.length };
+  }).filter(Boolean);
+
+  if (!el) return;
+  el.innerHTML = '<div class="checklist-progress">'
+    +'<div class="cl-hdr">📋 รายการเอกสารแนบ (รวมทุกผลงาน)</div>'
+    +needed.map(function(obj) {
+      var done = obj.filled===obj.total;
+      var status = done
+        ? '<span class="cl-status cl-ok">ครบ '+obj.filled+'/'+obj.total+'</span>'
+        : obj.rule.required
+          ? '<span class="cl-status cl-missing">ขาด '+(obj.total-obj.filled)+'/'+obj.total+'</span>'
+          : '<span class="cl-status cl-opt">ไม่บังคับ '+obj.filled+'/'+obj.total+'</span>';
+      return '<div class="cl-row"><span class="cl-icon">'+obj.rule.icon+'</span>'
+        +'<div class="cl-body"><div class="cl-label">'+obj.rule.label+'</div>'
+        +'<div class="cl-sub">'+obj.rule.hint+'</div></div>'+status+'</div>';
+    }).join('')+'</div>';
+}
+
+function updateSubmitBtn(result) {
+  var c1  = document.getElementById('chk-truth');
+  var c2  = document.getElementById('chk-unique');
+  var btn = document.getElementById('btn-submit');
+  var ctx = getCtx();
+  var res = result || computeEligibility(pubs, ctx.position, ctx.isAdmin, ctx.fieldGroup);
+  if (btn) btn.disabled = !(res.pass && c1&&c1.checked && c2&&c2.checked);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  MODAL PREVIEW
+// ════════════════════════════════════════════════════════════════════════
+function openPreview() {
+  var fy    = (document.getElementById('fiscal-year')||{}).value||'2568';
+  var round = (document.getElementById('round')||{}).value||'1';
+  var name  = (document.getElementById('pf-name-th')||{}).textContent||'';
+  var pos   = (document.getElementById('pf-position')||{}).textContent||'';
+  var dept  = (document.getElementById('pf-dept')||{}).textContent||'';
+  var stype = (document.getElementById('pf-staff-type')||{}).value||'—';
+  var appt  = (document.getElementById('pf-appoint')||{}).value||'—';
+
+  var rows = pubs.map(function(p,i) {
+    var t = TIERS.find(function(t){return t.key===p.tier;});
+    return '<tr style="border-bottom:1px solid #eee">'
+      +'<td style="padding:5px 8px">'+(i+1)+'</td>'
+      +'<td style="padding:5px 8px">'+esc(p.title||'—')+'</td>'
+      +'<td style="padding:5px 8px">'+esc(p.authors||'—')+'</td>'
+      +'<td style="padding:5px 8px">'+(t?t.label:'—')+'</td>'
+      +'<td style="padding:5px 8px">'+(p.role.join(', ')||'—')+'</td></tr>';
+  }).join('');
+
+  var body = document.getElementById('modal-body');
+  if (body) body.innerHTML = '<div style="font-family:\'Sarabun\',sans-serif;font-size:13px;line-height:2">'
+    +'<div style="text-align:center;font-size:16px;font-weight:600;margin-bottom:12px">บันทึกข้อความ</div>'
+    +'<table style="width:100%;font-size:12px;margin-bottom:10px;border-collapse:collapse">'
+    +'<tr><td style="width:120px;color:#888">ส่วนราชการ</td><td>'+dept+'</td></tr>'
+    +'<tr><td style="color:#888">เรื่อง</td><td>ขอเสนอผลงานทางวิชาการฯ ปีงบประมาณ พ.ศ. '+fy+' รอบที่ '+round+'</td></tr>'
+    +'<tr><td style="color:#888">เรียน</td><td>คณบดี</td></tr></table>'
+    +'<p style="margin-bottom:10px">ด้วย<strong>'+name+'</strong> ตำแหน่ง'+pos+' ('+stype+') สังกัด'+dept
+    +' ได้รับการแต่งตั้งตำแหน่งทางวิชาการเมื่อวันที่ '+appt
+    +' มีความประสงค์ขอเสนอผลงานทางวิชาการ ประจำปีงบประมาณ พ.ศ. '+fy+' รอบที่ '+round+' โดยมีผลงานดังนี้</p>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<tr style="background:#f5f5f5"><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">#</th>'
+    +'<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">ชื่อผลงาน</th>'
+    +'<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">ชื่อผู้แต่ง</th>'
+    +'<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">ฐานข้อมูล</th>'
+    +'<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">บทบาท</th></tr>'+rows+'</table>'
+    +'<p style="margin-top:12px">ทั้งนี้ข้าพเจ้าขอรับรองว่าผลงานดังกล่าวเป็นความจริงทุกประการ...</p>'
+    +'<div style="text-align:right;margin-top:24px"><div>ลงชื่อ ..................................</div>'
+    +'<div>('+name+')</div><div>'+pos+'</div></div></div>';
+
+  var modal = document.getElementById('modal');
+  if (modal) modal.classList.add('open');
+}
+
+function closeModal() {
+  var modal = document.getElementById('modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function dlDocx() {
+  toast('ระบบกำลังสร้าง .docx — ฟีเจอร์นี้ต้องเชื่อมต่อ Apps Script backend', 'info');
+  closeModal();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  SUBMIT
+// ════════════════════════════════════════════════════════════════════════
+function doSubmit() {
+  var btn = document.getElementById('btn-submit');
+  if (btn) { btn.disabled=true; btn.textContent='กำลังส่ง…'; }
+  setTimeout(function() {
+    toast('ยื่นคำขอสำเร็จ ระบบจะแจ้งผลทาง email', 'success');
+    if (btn) btn.textContent = '✓ ยื่นแล้ว';
+  }, 1400);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toast(msg, type) {
+  var c = document.getElementById('toasts');
+  if (!c) return;
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type==='success'?'success':type==='error'?'error':'');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function(){t.remove();}, 3800);
+}
+
+
+// ════════════════════════════════════════════════════════════════════════
+//  PERSONAL CRITERIA PANEL
+//  Rebuilds the left sidebar "เกณฑ์ขั้นต่ำของฉัน" whenever profile changes
+// ════════════════════════════════════════════════════════════════════════
+
+var RATE_TABLE = {
+  'ผู้ช่วยศาสตราจารย์': '≤ 2,800 ฿/เดือน',
+  'รองศาสตราจารย์':     '≤ 4,950 ฿/เดือน',
+  'ศาสตราจารย์':        '≤ 7,800 ฿/เดือน',
+  'อาจารย์':            '—',
+  'ศาสตราจารย์ต่อเวลา': '≤ 7,800 ฿/เดือน',
+};
+
+var RATE_NUMERIC = {
+  'ผู้ช่วยศาสตราจารย์': 2800,
+  'รองศาสตราจารย์':     4950,
+  'ศาสตราจารย์':        7800,
+  'ศาสตราจารย์ต่อเวลา': 7800,
+  'อาจารย์':            0,
+};
+
+/** Returns array of { critKey, label, target, minQ } for current profile */
+function getPersonalCriteria() {
+  var ctx      = getCtx();
+  var fg       = CRITERIA[ctx.fieldGroup] || CRITERIA.sci_tech;
+  var items    = [];
+
+  Object.keys(fg).forEach(function(critKey) {
+    var typeCrit = fg[critKey];
+    if (!typeCrit) return;
+    var posCrit  = typeCrit[ctx.position];
+    if (!posCrit) return;  // null = not eligible for this position
+
+    var target   = ctx.isAdmin
+      ? (posCrit[2] !== null && posCrit[2] !== undefined ? posCrit[2] : posCrit[1])
+      : posCrit[1];
+    var minQ     = posCrit[0];
+
+    items.push({
+      critKey: critKey,
+      label:   CRITERIA_LABELS[critKey] || critKey,
+      target:  target,
+      minQ:    minQ,
+    });
+  });
+
+  return items;
+}
+
+/** Count pubs that contribute to a specific critKey (with Q check) */
+function countForCrit(critKey, position) {
+  var ctx  = getCtx();
+  var fg   = CRITERIA[ctx.fieldGroup] || CRITERIA.sci_tech;
+  var posCrit = (fg[critKey] || {})[position];
+  if (!posCrit) return 0;
+
+  return pubs.filter(function(p) {
+    if (!p.tier || !p.role.length) return false;
+    if (TIER_TO_CRIT[p.tier] !== critKey) return false;
+    if (critKey === 'scopus') {
+      return qRank(p.tier) >= minQRank(posCrit[0]);
+    }
+    return true;
+  }).length;
+}
+
+/** Rebuild the entire personal criteria sidebar panel */
+function buildCriteriaPanel() {
+  var box   = document.getElementById('criteria-body');
+  var hdr   = document.getElementById('criteria-hdr');
+  if (!box) return;
+
+  var ctx   = getCtx();
+  var items = getPersonalCriteria();
+  var rate  = RATE_TABLE[ctx.position] || '—';
+  var adminLabel = ctx.isAdmin ? ' (ผู้บริหาร)' : ' (อาจารย์ประจำ)';
+  var fgLabel = ctx.fieldGroup === 'sci_tech'
+    ? 'กลุ่ม 1 วิทย์/วิศวะ'
+    : 'กลุ่ม 2 บริหาร/สังคม';
+
+  if (!items.length) {
+    box.innerHTML = '<p style="font-size:12px;color:var(--muted);line-height:1.6;padding:4px 0">ตำแหน่งนี้ยังไม่มีข้อมูลเกณฑ์</p>';
+    return;
+  }
+
+  // Header: position + group
+  if (hdr) hdr.textContent = 'เกณฑ์ขั้นต่ำของฉัน';
+
+  var out = '';
+
+  // Position badge row
+  out += '<div class="crit-position">'
+    + '<span class="pos-tag">'+ctx.position+'</span>'
+    + '<span style="font-size:11px;color:var(--muted)">'+fgLabel+adminLabel+'</span>'
+    + '</div>';
+
+  // Criteria items
+  out += '<div class="crit-items">';
+  items.forEach(function(item) {
+    var have   = countForCrit(item.critKey, ctx.position);
+    var pct    = item.target > 0 ? Math.min(have / item.target, 1) : 0;
+    var state  = have >= item.target ? 'done' : (have > 0 ? 'partial' : 'empty');
+    var check  = have >= item.target ? '✓' : (have > 0 ? have : '');
+    var qNote  = (item.critKey === 'scopus' && item.minQ !== 'any')
+      ? ' <span style="font-size:10px;color:var(--muted)">('+ item.minQ +' ขึ้นไป)</span>' : '';
+
+    out += '<div class="crit-item '+state+'">'
+      + '<div class="crit-item-row">'
+      + '<div class="crit-check">'+check+'</div>'
+      + '<div class="crit-item-info">'
+      + '<div class="crit-item-label">'+item.label+qNote+'</div>'
+      + '<div class="crit-item-count">'+have+' / '+item.target+' รายการ</div>'
+      + '<div class="crit-mini-bar"><div class="crit-mini-fill" style="width:'+(pct*100).toFixed(0)+'%"></div></div>'
+      + '</div></div>';
+
+    // Hint for empty items
+    if (state === 'empty') {
+      out += '<div class="crit-note">ต้องการอีก ' + item.target + ' รายการ</div>';
+    } else if (state === 'partial') {
+      out += '<div class="crit-note">ต้องการอีก ' + (item.target - have) + ' รายการ</div>';
+    }
+
+    out += '</div>';
+  });
+  out += '</div>';
+
+  // Rate info
+  var rateNum = RATE_NUMERIC[ctx.position] || 0;
+  if (rateNum > 0) {
+    var half = rateNum;
+    var total = rateNum * 2;
+    var fmt = function(num) { return '≤ ' + num.toLocaleString() + ' ฿/เดือน'; };
+    out += '<div style="border-top:1px solid var(--border-lt);margin-top:2px">'
+      + '<div class="crit-rate-row"><span class="crit-rate-lbl" style="font-weight:600">ค่าตอบแทนพิเศษรวม</span><span class="crit-rate-val">'+fmt(total)+'</span></div>'
+      + '<div class="crit-rate-row" style="padding-left: 20px; font-size: 11px; color: var(--muted);"><span class="crit-rate-lbl">— 50% แรก (อัตโนมัติ)</span><span class="crit-rate-val" style="color:var(--muted)">'+fmt(half)+'</span></div>'
+      + '<div class="crit-rate-row" style="padding-left: 20px; font-size: 11px; color: var(--muted);"><span class="crit-rate-lbl">— 50% หลัง (จ่ายตามภาระงาน)</span><span class="crit-rate-val" style="color:var(--muted)">'+fmt(half)+'</span></div>'
+      + '</div>';
+  } else {
+    out += '<div style="border-top:1px solid var(--border-lt);margin-top:2px">'
+      + '<div class="crit-rate-row"><span class="crit-rate-lbl">ค่าตอบแทนพิเศษ</span><span class="crit-rate-val">—</span></div>'
+      + '</div>';
+  }
+
+  box.innerHTML = out;
+}
+
+/** Update per-type progress rows in lower progress box */
+function buildProgressRows(details) {
+  var el = document.getElementById('sc-progress-rows');
+  if (!el) return;
+  if (!details || !details.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = details.map(function(d) {
+    var pct   = Math.min(d.contribution * 100, 100).toFixed(0);
+    var state = d.contribution >= 1 ? 'done' : (d.contribution > 0 ? 'partial' : 'empty');
+    return '<div class="prog-row">'
+      + '<div class="prog-label">'+d.label+'</div>'
+      + '<div class="prog-fraction '+state+'">'+d.count+'/'+d.target+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  INIT — script is at end of body, DOM is already ready
+// ════════════════════════════════════════════════════════════════════════
+(function() {
+  // wire change events
+  ['pf-is-admin','pf-field-group','pf-staff-type','pf-appoint','pf-position'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateScorecard);
+  });
+  buildCriteriaPanel();
+  ['chk-truth','chk-unique'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', function(){ updateSubmitBtn(); });
+  });
+  goStep(1);
+})();
+</script>
+
+</body>
+</html>
