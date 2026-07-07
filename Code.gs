@@ -89,6 +89,11 @@ function getStaffProfile() {
     }
   }
   
+  // Look up department head name
+  var deptName = staff['Div_Name_Th'] || '';
+  var matchedDivId = staff['Div_ID'] || '';
+  staff['Dept_Head_Th'] = getDeptHeadName(deptName, matchedDivId);
+  
   return staff;
 }
 
@@ -287,7 +292,12 @@ function generateDocxMemo(data) {
   var doc = DocumentApp.openById(docId);
   var body = doc.getBody();
   
-  // Replace simple placeholders
+  // Replace signature block with full academic name (inside parentheses)
+  var fullAcadName = getFullAcademicName(data.fullNameTh, data.position, data.email);
+  body.replaceText('\\(\\s*\\{\\{FULL_NAME\\}\\}\\s*\\)', '( ' + (fullAcadName || '') + ' )');
+  body.replaceText('{{SIGN_NAME}}', fullAcadName || '');
+  
+  // Replace remaining placeholders (body uses นาย/นาง/นางสาว)
   body.replaceText('{{FULL_NAME}}', data.fullNameTh || '');
   body.replaceText('{{POSITION}}', data.position || '');
   body.replaceText('{{DEPT}}', data.dept || '');
@@ -295,6 +305,12 @@ function generateDocxMemo(data) {
   body.replaceText('{{APPOINT_DATE}}', data.appointDate || '');
   body.replaceText('{{FISCAL_YEAR}}', data.fiscalYear || '');
   body.replaceText('{{ROUND}}', data.round || '');
+  
+  // Replace department head name placeholder
+  var applicantEmail = data.email || Session.getActiveUser().getEmail() || '';
+  var divId = getDivIdByEmail(applicantEmail);
+  var deptHead = getDeptHeadName(data.dept, divId);
+  body.replaceText('{{DEPT_HEAD}}', deptHead || '');
   
   // Format and replace Thai Date (e.g. 7 กรกฎาคม 2569)
   var thaiMonths = [
@@ -647,6 +663,8 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
   var queryFYVal = parseInt(fiscalYear, 10);
   var queryRoundVal = parseInt(round, 10);
   
+  var totalScore = 0;
+  var passStatus = 'ไม่ผ่านเกณฑ์';
   for (var r = 1; r < mainData.length; r++) {
     var rowEmail = mainData[r][1];
     var rowFYVal = parseInt(mainData[r][8], 10);
@@ -657,14 +675,22 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
         rowRoundVal === queryRoundVal) {
       var appoint = mainData[r][6];
       var appointStr = appoint instanceof Date ? appoint.toISOString().split('T')[0] : String(appoint || '');
+      var fieldGroup = String(mainData[r][7] || 'sci_tech').trim();
+      totalScore = parseFloat(mainData[r][10] || 0);
+      passStatus = String(mainData[r][11] || 'ไม่ผ่านเกณฑ์').trim();
+      
       subRecord = {
+        email: activeEmail,
         fullNameTh: mainData[r][2],
         position: mainData[r][3],
         dept: mainData[r][4],
         staffType: mainData[r][5],
-        appointDate: appointStr,
+        appointDate: formatThaiDate(appointStr),
+        fieldGroup: fieldGroup,
         fiscalYear: String(mainData[r][8] || '').trim(),
         round: String(mainData[r][9] || '').trim(),
+        totalPct: Math.round(totalScore * 100),
+        passStatus: passStatus
       };
       break;
     }
@@ -675,6 +701,17 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
   }
   
   subRecord.pubs = getSubmissionDetails(activeEmail, fiscalYear, round);
+  
+  // Deduce isAdmin status from total score
+  var isAdmin = determineIsAdmin(subRecord.pubs, subRecord.position, subRecord.fieldGroup, totalScore);
+  
+  // Calculate publication scores
+  for (var i = 0; i < subRecord.pubs.length; i++) {
+    var p = subRecord.pubs[i];
+    var scoreVal = getPubScore(p, subRecord.position, isAdmin, subRecord.fieldGroup);
+    p.score = scoreVal + '%';
+  }
+  
   return generateDocxMemo(subRecord);
 }
 
@@ -743,3 +780,444 @@ function getSubmissionDebugInfo(email) {
   }
   return info;
 }
+
+function formatThaiDate(dateStr) {
+  if (!dateStr || dateStr === '—' || dateStr === '') return '—';
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+
+  var year = parseInt(parts[0], 10);
+  var monthIdx = parseInt(parts[1], 10) - 1;
+  var day = parseInt(parts[2], 10);
+
+  var thaiMonths = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+
+  return day + ' ' + thaiMonths[monthIdx] + ' ' + (year + 543);
+}
+
+function getCritKeyFromTierTh(tierTh) {
+  if (!tierTh) return null;
+  var t = String(tierTh).trim();
+  if (t.indexOf('Scopus Q1') !== -1 || t.indexOf('Scopus Q2') !== -1 || t.indexOf('Scopus Q3') !== -1 || t.indexOf('Scopus Q4') !== -1) {
+    return 'scopus';
+  }
+  if (t.indexOf('Review Article') !== -1 || t.indexOf('Book Chapter') !== -1) {
+    return 'review_article';
+  }
+  if (t.indexOf('ประชุมวิชาการ') !== -1 || t.indexOf('Proceedings') !== -1 || t.indexOf('full_proc') !== -1) {
+    return 'full_proc';
+  }
+  if (t.indexOf('TCI กลุ่ม 1') !== -1 || t.indexOf('TCI 1') !== -1) {
+    return 'tci_1';
+  }
+  if (t.indexOf('อนุสิทธิบัตร') !== -1) {
+    return 'petty_pat';
+  }
+  if (t.indexOf('สิทธิบัตร') !== -1) {
+    return 'patent';
+  }
+  if (t.indexOf('งานสร้างสรรค์/รางวัล (นานาชาติ)') !== -1 || t.indexOf('ศิลปกรรม/รางวัล (นานาชาติ)') !== -1) {
+    return 'artwork_intl';
+  }
+  if (t.indexOf('งานสร้างสรรค์/รางวัล (ชาติ)') !== -1 || t.indexOf('ศิลปกรรม/รางวัล (ชาติ)') !== -1) {
+    return 'artwork_nat';
+  }
+  return null;
+}
+
+function getQRankFromTierTh(tierTh) {
+  var t = String(tierTh).trim();
+  if (t.indexOf('Scopus Q1') !== -1) return 4;
+  if (t.indexOf('Scopus Q2') !== -1) return 3;
+  if (t.indexOf('Scopus Q3') !== -1) return 2;
+  if (t.indexOf('Scopus Q4') !== -1) return 1;
+  return 0;
+}
+
+function minQRank(minQ) {
+  if (!minQ || minQ === 'any') return 0;
+  var n = parseInt(minQ.replace('Q', '').replace('+', ''));
+  return 5 - n; // Q1->4, Q2->3, Q3->2, Q4->1
+}
+
+var CRITERIA = {
+  sci_tech: {
+    scopus: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['Q4+', 1, 1], 'รองศาสตราจารย์': ['Q3+', 2, 1], 'ศาสตราจารย์': ['Q2+', 3, 1], 'ศาสตราจารย์ต่อเวลา': ['Q2+', 5, null] },
+    review_article: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 1, 1], 'รองศาสตราจารย์': ['any', 2, 1], 'ศาสตราจารย์': ['any', 3, 1], 'ศาสตราจารย์ต่อเวลา': null },
+    full_proc: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': ['any', 6, 3], 'ศาสตราจารย์ต่อเวลา': null },
+    patent: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 1, 1], 'รองศาสตราจารย์': ['any', 2, 1], 'ศาสตราจารย์': ['any', 3, 1], 'ศาสตราจารย์ต่อเวลา': null },
+    petty_pat: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': ['any', 6, 3], 'ศาสตราจารย์ต่อเวลา': null },
+  },
+  biz_social: {
+    scopus: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['Q4+', 1, 1], 'รองศาสตราจารย์': ['Q3+', 2, 1], 'ศาสตราจารย์': ['Q2+', 3, 1], 'ศาสตราจารย์ต่อเวลา': ['Q2+', 5, null] },
+    review_article: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 1, 1], 'รองศาสตราจารย์': ['any', 2, 1], 'ศาสตราจารย์': ['any', 3, 1], 'ศาสตราจารย์ต่อเวลา': null },
+    full_proc: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': ['any', 6, 3], 'ศาสตราจารย์ต่อเวลา': null },
+    artwork_intl: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 1, 1], 'รองศาสตราจารย์': ['any', 2, 1], 'ศาสตราจารย์': ['any', 3, 1], 'ศาสตราจารย์ต่อเวลา': null },
+    artwork_nat: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': ['any', 6, 2], 'ศาสตราจารย์ต่อเวลา': null },
+    tci_1: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': null, 'ศาสตราจารย์ต่อเวลา': null },
+    patent: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 1, 1], 'รองศาสตราจารย์': ['any', 2, 1], 'ศาสตราจารย์': ['any', 3, 1], 'ศาสตราจารย์ต่อเวลา': null },
+    petty_pat: { 'อาจารย์': ['any', 1, 1], 'ผู้ช่วยศาสตราจารย์': ['any', 2, 1], 'รองศาสตราจารย์': ['any', 4, 2], 'ศาสตราจารย์': ['any', 6, 3], 'ศาสตราจารย์ต่อเวลา': null },
+  },
+};
+
+function getPubScore(p, position, isAdmin, fieldGroup) {
+  if (!p.tier || !p.role || !p.role.length) return 0;
+  var critKey = getCritKeyFromTierTh(p.tier);
+  if (!critKey) return 0;
+
+  var fg = CRITERIA[fieldGroup] || CRITERIA.sci_tech;
+  var typeCrit = fg[critKey];
+  if (!typeCrit) return 0;
+
+  var posCrit = typeCrit[position];
+  if (!posCrit) return 0;
+
+  if (critKey === 'scopus') {
+    var need = minQRank(posCrit[0]);
+    var have = getQRankFromTierTh(p.tier);
+    if (have < need) return 0;
+  }
+
+  var target = isAdmin ? (posCrit[2] !== null && posCrit[2] !== undefined ? posCrit[2] : posCrit[1]) : posCrit[1];
+  if (!target) return 0;
+
+  return Math.round(100 / target);
+}
+
+function calculateTotalScore(pubs, position, isAdmin, fieldGroup) {
+  if (!pubs || pubs.length === 0) return 0;
+  
+  var fg = CRITERIA[fieldGroup] || CRITERIA.sci_tech;
+  var grouped = {};
+  
+  pubs.forEach(function (p) {
+    if (!p.tier || !p.role || !p.role.length) return;
+    var critKey = getCritKeyFromTierTh(p.tier);
+    if (!critKey) return;
+    
+    var typeCrit = fg[critKey];
+    if (!typeCrit) return;
+    
+    var posCrit = typeCrit[position];
+    if (!posCrit) return;
+    
+    if (critKey === 'scopus') {
+      var need = minQRank(posCrit[0]);
+      var have = getQRankFromTierTh(p.tier);
+      if (have < need) return;
+    }
+    
+    if (!grouped[critKey]) grouped[critKey] = [];
+    grouped[critKey].push(p);
+  });
+  
+  var totalScore = 0;
+  Object.keys(grouped).forEach(function (critKey) {
+    var items = grouped[critKey];
+    var typeCrit = fg[critKey];
+    var posCrit = typeCrit[position];
+    if (!posCrit) return;
+    
+    var target = isAdmin ? (posCrit[2] !== null && posCrit[2] !== undefined ? posCrit[2] : posCrit[1]) : posCrit[1];
+    var contrib = items.length / target;
+    totalScore += contrib;
+  });
+  
+  return totalScore;
+}
+
+function determineIsAdmin(pubs, position, fieldGroup, savedTotalScore) {
+  var scoreWithIsAdminFalse = calculateTotalScore(pubs, position, false, fieldGroup);
+  if (Math.abs(scoreWithIsAdminFalse - savedTotalScore) < 0.01) {
+    return false;
+  }
+  var scoreWithIsAdminTrue = calculateTotalScore(pubs, position, true, fieldGroup);
+  if (Math.abs(scoreWithIsAdminTrue - savedTotalScore) < 0.01) {
+    return true;
+  }
+  return false;
+}
+
+function getDivIdByEmail(email) {
+  if (!email) return '';
+  var sheetId = '1Ljo361CBa1p9d79V4dxOGkttubCo2TnN2eiHwSAKFkk';
+  var ss = SpreadsheetApp.openById(sheetId);
+  
+  // Find Staff sheet robustly
+  var sheets = ss.getSheets();
+  var staffSheet = null;
+  for (var s = 0; s < sheets.length; s++) {
+    var sName = sheets[s].getName().trim().toLowerCase();
+    if (sName === 'staff' || sName.indexOf('staff') !== -1) {
+      staffSheet = sheets[s];
+      break;
+    }
+  }
+  if (!staffSheet) return '';
+  
+  var staffData = staffSheet.getDataRange().getValues();
+  if (staffData.length <= 1) return '';
+  
+  var headers = staffData[0];
+  
+  function findColIndex(list, terms) {
+    for (var i = 0; i < list.length; i++) {
+      var val = String(list[i]).trim().toLowerCase();
+      if (!val) continue;
+      for (var j = 0; j < terms.length; j++) {
+        var term = terms[j].toLowerCase();
+        if (val === term || val.indexOf(term) !== -1 || term.indexOf(val) !== -1) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+  
+  var emailIdx = findColIndex(headers, ['email', 'อีเมล', 'mail']);
+  var divIdIdx = findColIndex(headers, ['div_id', 'divid', 'div', 'รหัสภาควิชา', 'รหัสภาค', 'รหัสหน่วยงาน']);
+  
+  if (emailIdx === -1 || divIdIdx === -1) return '';
+  
+  var qEmail = String(email).trim().toLowerCase();
+  for (var i = 1; i < staffData.length; i++) {
+    var row = staffData[i];
+    if (String(row[emailIdx]).trim().toLowerCase() === qEmail) {
+      return String(row[divIdIdx]).trim();
+    }
+  }
+  return '';
+}
+
+function getDeptHeadName(deptName, divId) {
+  var sheetId = '1Ljo361CBa1p9d79V4dxOGkttubCo2TnN2eiHwSAKFkk';
+  var ss = SpreadsheetApp.openById(sheetId);
+  
+  // 1. Find Division sheet
+  var divSheet = ss.getSheetByName('Division') || ss.getSheetByName('division');
+  if (!divSheet) return '';
+  
+  var divData = divSheet.getDataRange().getValues();
+  if (divData.length <= 1) return '';
+  
+  var divHeaders = divData[0];
+  
+  function findColIndex(list, terms) {
+    for (var i = 0; i < list.length; i++) {
+      var val = String(list[i]).trim().toLowerCase();
+      if (!val) continue;
+      for (var j = 0; j < terms.length; j++) {
+        var term = terms[j].toLowerCase();
+        if (val === term || val.indexOf(term) !== -1 || term.indexOf(val) !== -1) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+  
+  var divIdIdx = findColIndex(divHeaders, ['div_id', 'divid', 'div', 'รหัสภาควิชา', 'รหัสภาค', 'รหัสหน่วยงาน']);
+  var deptNameIdx = findColIndex(divHeaders, ['div_name_th', 'dept', 'department', 'div_name', 'divname', 'ชื่อภาควิชา', 'ภาควิชา']);
+  var headEmailIdx = findColIndex(divHeaders, ['head_of_department', 'headofdepartment', 'head_email', 'heademail', 'หัวหน้าภาควิชา']);
+  
+  if (divIdIdx === -1 && deptNameIdx === -1) return '';
+  if (headEmailIdx === -1) return '';
+  
+  function normalizeDept(name) {
+    if (!name) return '';
+    return String(name)
+      .replace(/\s+/g, '')
+      .replace(/ภาควิชา/g, '')
+      .replace(/สาขาวิชา/g, '')
+      .replace(/วิศวกรรม/g, 'วิศว')
+      .trim()
+      .toLowerCase();
+  }
+  
+  function normalizeId(idVal) {
+    if (!idVal) return '';
+    var s = String(idVal).trim();
+    if (s.indexOf('.') !== -1) {
+      s = s.split('.')[0];
+    }
+    return s;
+  }
+  
+  var qDept = normalizeDept(deptName);
+  var qDivId = normalizeId(divId);
+  var headEmail = '';
+  
+  // Find head's email in Division sheet
+  for (var i = 1; i < divData.length; i++) {
+    var row = divData[i];
+    
+    // Match by Div_ID
+    if (divIdIdx !== -1 && qDivId) {
+      var rowDivId = normalizeId(row[divIdIdx]);
+      if (rowDivId === qDivId) {
+        headEmail = String(row[headEmailIdx]).trim();
+        break;
+      }
+    }
+    
+    // Match by Dept name
+    if (deptNameIdx !== -1 && qDept) {
+      var rowDept = normalizeDept(row[deptNameIdx]);
+      if (rowDept && (qDept.indexOf(rowDept) !== -1 || rowDept.indexOf(qDept) !== -1)) {
+        headEmail = String(row[headEmailIdx]).trim();
+        break;
+      }
+    }
+  }
+  
+  if (!headEmail) return '';
+  
+  // 2. Find Staff sheet robustly
+  var sheets = ss.getSheets();
+  var staffSheet = null;
+  for (var s = 0; s < sheets.length; s++) {
+    var sName = sheets[s].getName().trim().toLowerCase();
+    if (sName === 'staff' || sName.indexOf('staff') !== -1) {
+      staffSheet = sheets[s];
+      break;
+    }
+  }
+  if (!staffSheet) return '';
+  
+  var staffData = staffSheet.getDataRange().getValues();
+  if (staffData.length <= 1) return '';
+  
+  var staffHeaders = staffData[0];
+  var emailIdx = findColIndex(staffHeaders, ['email', 'อีเมล', 'mail']);
+  var titleIdx = findColIndex(staffHeaders, ['title', 'คำนำหน้า']);
+  var acadTitleIdx = findColIndex(staffHeaders, ['academic_title', 'คำนำหน้าทางวิชาการ', 'academictitle']);
+  var fullnameIdx = findColIndex(staffHeaders, ['fullname', 'fullname_th', 'ชื่อ', 'name']);
+  var surnameIdx = findColIndex(staffHeaders, ['surname', 'surname_th', 'นามสกุล']);
+  var posIdx = findColIndex(staffHeaders, ['position', 'ตำแหน่ง', 'academic_position']);
+  
+  if (emailIdx === -1 || fullnameIdx === -1) return '';
+  
+  var qHeadEmail = headEmail.toLowerCase();
+  for (var i = 1; i < staffData.length; i++) {
+    var row = staffData[i];
+    var rowEmail = String(row[emailIdx]).trim().toLowerCase();
+    
+    if (rowEmail === qHeadEmail) {
+      // Reconstruct the full academic name
+      var title = titleIdx !== -1 ? String(row[titleIdx]).trim() : '';
+      var acadTitle = acadTitleIdx !== -1 ? String(row[acadTitleIdx]).trim() : '';
+      var fullname = String(row[fullnameIdx]).trim();
+      var surname = surnameIdx !== -1 ? String(row[surnameIdx]).trim() : '';
+      var position = posIdx !== -1 ? String(row[posIdx]).trim() : '';
+      
+      if (acadTitle === 'NULL' || acadTitle === '-') acadTitle = '';
+      if (title === 'NULL' || title === '-') title = '';
+      
+      var cleanTitle = title;
+      if (/(ดร)/.test(acadTitle) || /(ดร)/.test(title)) {
+        cleanTitle = 'ดร.';
+      }
+      
+      var baseName = (cleanTitle && cleanTitle !== 'นาย' && cleanTitle !== 'นาง' && cleanTitle !== 'นางสาว' ? cleanTitle + ' ' : '') + fullname + ' ' + surname;
+      baseName = baseName.replace(/\s+/g, ' ').trim();
+      
+      var fullAcadName = getFullAcademicName(baseName, position, headEmail);
+      return expandAcademicTitle(fullAcadName);
+    }
+  }
+  
+  return '';
+}
+
+function expandAcademicTitle(nameStr) {
+  if (!nameStr) return '';
+  var name = String(nameStr).trim();
+  
+  name = name.replace(/^ศ\.ดร\./g, 'ศาสตราจารย์ ดร.');
+  name = name.replace(/^รศ\.ดร\./g, 'รองศาสตราจารย์ ดร.');
+  name = name.replace(/^ผศ\.ดร\./g, 'ผู้ช่วยศาสตราจารย์ ดร.');
+  name = name.replace(/^ศ\./g, 'ศาสตราจารย์');
+  name = name.replace(/^รศ\./g, 'รองศาสตราจารย์');
+  name = name.replace(/^ผศ\./g, 'ผู้ช่วยศาสตราจารย์');
+  name = name.replace(/^อ\.ดร\./g, 'อาจารย์ ดร.');
+  name = name.replace(/^อ\./g, 'อาจารย์');
+  
+  return name;
+}
+
+function getFullAcademicName(fullNameTh, position, email) {
+  if (!fullNameTh) return '';
+  var name = String(fullNameTh).trim();
+  
+  var hasDr = /ดร\.?/.test(name);
+  
+  if (!hasDr && email) {
+    try {
+      var sheetId = '1Ljo361CBa1p9d79V4dxOGkttubCo2TnN2eiHwSAKFkk';
+      var ss = SpreadsheetApp.openById(sheetId);
+      var sheets = ss.getSheets();
+      var staffSheet = null;
+      for (var s = 0; s < sheets.length; s++) {
+        var sName = sheets[s].getName().trim().toLowerCase();
+        if (sName === 'staff' || sName.indexOf('staff') !== -1) {
+          staffSheet = sheets[s];
+          break;
+        }
+      }
+      if (staffSheet) {
+        var staffData = staffSheet.getDataRange().getValues();
+        var headers = staffData[0];
+        var emailIdx = -1;
+        var titleIdx = -1;
+        var acadTitleIdx = -1;
+        for (var c = 0; c < headers.length; c++) {
+          var h = String(headers[c]).trim().toLowerCase();
+          if (h === 'email' || h === 'อีเมล' || h === 'mail') emailIdx = c;
+          if (h === 'title' || h === 'คำนำหน้า') titleIdx = c;
+          if (h === 'academic_title' || h === 'academicTitle' || h === 'คำนำหน้าทางวิชาการ' || h === 'academictitle') acadTitleIdx = c;
+        }
+        if (emailIdx !== -1) {
+          var qEmail = String(email).trim().toLowerCase();
+          for (var i = 1; i < staffData.length; i++) {
+            var row = staffData[i];
+            if (String(row[emailIdx]).trim().toLowerCase() === qEmail) {
+              var titleVal = titleIdx !== -1 ? String(row[titleIdx]) : '';
+              var acadTitleVal = acadTitleIdx !== -1 ? String(row[acadTitleIdx]) : '';
+              if (/ดร/.test(titleVal) || /ดร/.test(acadTitleVal)) {
+                hasDr = true;
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore lookup error and fall back
+    }
+  }
+  
+  var cleanName = name.replace(/^(นาย|นางสาว|นาง|ดร\.?|ผศ\.?|รศ\.?|ศ\.?|ผู้ช่วยศาสตราจารย์|รองศาสตราจารย์|ศาสตราจารย์|อาจารย์)\s*/g, '');
+  cleanName = cleanName.replace(/^(ดร\.?)\s*/g, '').trim();
+  
+  var pos = String(position || '').trim();
+  if (pos === 'ผู้ช่วยศาสตราจารย์' || pos === 'รองศาสตราจารย์' || pos === 'ศาสตราจารย์' || pos === 'ศาสตราจารย์ต่อเวลา') {
+    var displayPos = pos === 'ศาสตราจารย์ต่อเวลา' ? 'ศาสตราจารย์' : pos;
+    if (hasDr) {
+      return displayPos + ' ดร.' + cleanName;
+    } else {
+      return displayPos + cleanName;
+    }
+  } else if (pos === 'อาจารย์') {
+    if (hasDr) {
+      return 'อาจารย์ ดร.' + cleanName;
+    } else {
+      return 'อาจารย์' + cleanName;
+    }
+  }
+  
+  return name;
+}
+

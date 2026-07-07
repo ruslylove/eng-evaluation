@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ยื่นขอค่าตอบแทนพิเศษ — คณะวิศวกรรมศาสตร์ มจพ.</title>
+  <link rel="icon" type="image/jpeg" href="https://www.eng.kmutnb.ac.th/wp-content/uploads/2019/01/Logo_ENG-800x800.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap"
@@ -1552,7 +1553,10 @@
 
   <!-- Topbar -->
   <header class="topbar">
-    <a class="topbar-logo" href="#">ENG · KMUTNB</a>
+    <a class="topbar-logo" href="#" style="display:flex;align-items:center;gap:10px;">
+      <img src="https://www.eng.kmutnb.ac.th/wp-content/uploads/2019/01/Logo_ENG-800x800.jpg" alt="ENG KMUTNB Logo" style="height:36px; width:36px; object-fit:contain; border-radius:50%; background:#fff; padding:2px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+      <span>ENG · KMUTNB</span>
+    </a>
     <div class="tb-div"></div>
     <span class="topbar-title">ระบบยื่นขอค่าตอบแทนพิเศษตามเกณฑ์มาตรฐานภาระงานวิชาการ</span>
     <div class="topbar-user">
@@ -1703,8 +1707,8 @@
           <div class="period-bar">
             <span style="font-size:13px;color:var(--muted)">ปีงบประมาณ พ.ศ.</span>
             <select id="fiscal-year" onchange="checkExistingSubmissionStatus()">
-              <option value="2568" selected>2568</option>
-              <option value="2567">2567</option>
+              <option value="2569" selected>2569</option>
+              <option value="2568">2568</option>
             </select>
             <span style="font-size:13px;color:var(--muted)">รอบที่</span>
             <select id="round" onchange="checkExistingSubmissionStatus()">
@@ -1731,6 +1735,10 @@
             <span class="notice-icon">⚠</span>
             <span>ต้องเป็น <strong>First author</strong> หรือ <strong>Corresponding author</strong> เท่านั้น
               และต้องแนบหลักฐานให้ครบตามที่กำหนดในแต่ละประเภทผลงาน</span>
+          </div>
+          <div class="notice info">
+            <span class="notice-icon">ℹ</span>
+            <span><strong>การนับผลงานย้อนหลัง:</strong> สามารถใช้ผลงานย้อนหลังได้ไม่เกิน 2 ปีงบประมาณ โดยเริ่มนับตั้งแต่วันที่ <strong>1 ตุลาคม 2568</strong> เป็นต้นไป และผลงานแต่ละรายการสามารถนำมาเสนอขอรับค่าตอบแทนพิเศษนี้ได้เพียง <strong>1 ครั้งเท่านั้น</strong> (ไม่สามารถใช้ซ้ำได้)</span>
           </div>
           <div class="pub-list" id="pub-list"></div>
           <button class="btn-add-pub" onclick="addPub()">
@@ -1874,7 +1882,8 @@
         Position_ID: 'พ0711',
         Div_ID: '65',
         Div_Name_Th: 'ภาควิชาวิศวกรรมไฟฟ้าและคอมพิวเตอร์',
-        Div_Short_Name: 'ECE'
+        Div_Short_Name: 'ECE',
+        Dept_Head_Th: 'รองศาสตราจารย์ ดร.แคทรียา สุวรรณศรี'
       },
       'tarit.r@eng.kmutnb.ac.th': {
         Email: 'tarit.r@eng.kmutnb.ac.th',
@@ -2327,6 +2336,8 @@
     //  PROFILE HELPERS
     // ════════════════════════════════════════════════════════════════════════
     var currentEmail = 'ruslee.s@eng.kmutnb.ac.th';
+    var currentDeptHead = '';
+    var currentHasDr = false;
 
     function loadUserProfile() {
       // Set loading states
@@ -2381,6 +2392,8 @@
 
       var email = profile.Email || profile.email || '';
       currentEmail = email;
+      currentDeptHead = profile.Dept_Head_Th || profile.deptHeadTh || '';
+      currentHasDr = /ดร/.test(profile.Academic_Title || '') || /ดร/.test(profile.Title || '') || false;
 
       // Assemble Thai name (with นาย/นาง/นางสาว)
       var fullNameTh = '';
@@ -2757,7 +2770,7 @@
     //  MODAL PREVIEW
     // ════════════════════════════════════════════════════════════════════════
     function openPreview() {
-      var fy = (document.getElementById('fiscal-year') || {}).value || '2568';
+      var fy = (document.getElementById('fiscal-year') || {}).value || '2569';
       var round = (document.getElementById('round') || {}).value || '1';
       var name = (document.getElementById('pf-name-th') || {}).textContent || '';
       var pos = (document.getElementById('pf-position') || {}).value || '';
@@ -2851,12 +2864,12 @@
         + '<td style="width:50%;vertical-align:top;padding-right:20px">'
         + '  <div style="font-weight:bold;margin-bottom:10px">ตรวจสอบแล้ว</div>'
         + '  <div style="margin-bottom:5px">ลงชื่อ..........................................................</div>'
-        + '  <div style="margin-bottom:5px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>'
+        + '  <div style="margin-bottom:5px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( ' + (currentDeptHead ? currentDeptHead : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;') + ' )</div>'
         + '  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;หัวหน้าภาควิชา</div>'
         + '</td>'
         + '<td style="width:50%;vertical-align:top;text-align:right">'
         + '  <div style="margin-bottom:5px;margin-top:25px">ลงชื่อ..........................................................</div>'
-        + '  <div style="margin-bottom:5px">( ' + name + ' )</div>'
+        + '  <div style="margin-bottom:5px">( ' + getFullAcademicName(name, pos, currentHasDr) + ' )</div>'
         + '  <div style="color:#555">ผู้เสนอภาระทางวิชาการขั้นต่ำ</div>'
         + '</td>'
         + '</tr>'
@@ -2886,12 +2899,13 @@
       var totalPct = Math.round(res.score * 100);
 
       var subData = {
+        email: currentEmail || '',
         fullNameTh: (document.getElementById('pf-name-th') || {}).textContent || '',
         position: ctx.position,
         dept: (document.getElementById('pf-dept') || {}).textContent || '',
         staffType: (document.getElementById('pf-staff-type') || {}).value || '',
         appointDate: formatThaiDate((document.getElementById('pf-appoint') || {}).value || ''),
-        fiscalYear: (document.getElementById('fiscal-year') || {}).value || '2568',
+        fiscalYear: (document.getElementById('fiscal-year') || {}).value || '2569',
         round: (document.getElementById('round') || {}).value || '1',
         totalPct: totalPct,
         passStatus: res.pass ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์',
@@ -3084,6 +3098,31 @@
     // ════════════════════════════════════════════════════════════════════════
     //  UTILS
     // ════════════════════════════════════════════════════════════════════════
+    function getFullAcademicName(fullNameTh, position, hasDr) {
+      if (!fullNameTh) return '';
+      var name = String(fullNameTh).trim();
+      var checkDr = hasDr || /ดร\.?/.test(name);
+      var cleanName = name.replace(/^(นาย|นางสาว|นาง|ดร\.?|ผศ\.?|รศ\.?|ศ\.?|ผู้ช่วยศาสตราจารย์|รองศาสตราจารย์|ศาสตราจารย์|อาจารย์)\s*/g, '');
+      cleanName = cleanName.replace(/^(ดร\.?)\s*/g, '').trim();
+      
+      var pos = String(position || '').trim();
+      if (pos === 'ผู้ช่วยศาสตราจารย์' || pos === 'รองศาสตราจารย์' || pos === 'ศาสตราจารย์' || pos === 'ศาสตราจารย์ต่อเวลา') {
+        var displayPos = pos === 'ศาสตราจารย์ต่อเวลา' ? 'ศาสตราจารย์' : pos;
+        if (checkDr) {
+          return displayPos + ' ดร.' + cleanName;
+        } else {
+          return displayPos + cleanName;
+        }
+      } else if (pos === 'อาจารย์') {
+        if (checkDr) {
+          return 'อาจารย์ ดร.' + cleanName;
+        } else {
+          return 'อาจารย์' + cleanName;
+        }
+      }
+      return name;
+    }
+
     function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     function formatThaiDate(dateStr) {
