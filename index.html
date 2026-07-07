@@ -1487,6 +1487,64 @@
     .prog-fraction.empty {
       color: var(--muted);
     }
+
+    /* Submissions History */
+    .history-table {
+      font-size: 13px;
+    }
+    .history-table th, .history-table td {
+      border-bottom: 1px solid var(--border-lt);
+    }
+    .history-table tr:hover {
+      background: #FAFBFD;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .badge-status.pass {
+      background: var(--pass-bg);
+      color: var(--pass);
+      border: 1px solid var(--pass-border);
+    }
+    .badge-status.fail {
+      background: var(--fail-bg);
+      color: var(--fail);
+      border: 1px solid var(--fail-border);
+    }
+    .btn-actions-cell {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: var(--r);
+      cursor: pointer;
+    }
+    .btn-sm.btn-info {
+      background: var(--blue-lt);
+      color: var(--blue);
+      border: 1px solid var(--border);
+    }
+    .btn-sm.btn-info:hover {
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn-sm.btn-download {
+      background: var(--pass-bg);
+      color: var(--pass);
+      border: 1px solid var(--pass-border);
+    }
+    .btn-sm.btn-download:hover {
+      background: var(--pass);
+      color: #fff;
+    }
   </style>
 </head>
 
@@ -1501,7 +1559,7 @@
       <div class="avatar" id="av">RS</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end">
         <span id="user-name" style="line-height:1.2">รุสลี่ สุทธวีร์กูล</span>
-        <a href="https://accounts.google.com/Logout" target="_parent"
+        <a href="#" onclick="handleLogout(event)"
           style="color:rgba(255,255,255,.6);font-size:10px;text-decoration:none;line-height:1.2"
           onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.6)'">ออกจากระบบ ✕</a>
       </div>
@@ -1525,6 +1583,9 @@
           </div>
           <div class="step-item" data-step="3" onclick="goStep(3)">
             <div class="step-num">3</div><span>ตรวจสอบและยื่น</span>
+          </div>
+          <div class="step-item" data-step="4" onclick="goStep(4)">
+            <div class="step-num">4</div><span>ประวัติการยื่นคำขอ</span>
           </div>
         </nav>
       </div>
@@ -1641,12 +1702,12 @@
           <div class="sdiv">ระยะเวลาที่ยื่น</div>
           <div class="period-bar">
             <span style="font-size:13px;color:var(--muted)">ปีงบประมาณ พ.ศ.</span>
-            <select id="fiscal-year">
+            <select id="fiscal-year" onchange="checkExistingSubmissionStatus()">
               <option value="2568" selected>2568</option>
               <option value="2567">2567</option>
             </select>
             <span style="font-size:13px;color:var(--muted)">รอบที่</span>
-            <select id="round">
+            <select id="round" onchange="checkExistingSubmissionStatus()">
               <option value="1" selected>1 — ส่งภายใน 31 ส.ค.</option>
               <option value="2">2 — ส่งภายใน 31 ต.ค.</option>
             </select>
@@ -1698,6 +1759,7 @@
           <div class="sdiv">เอกสารแนบที่จำเป็น (checklist เอกสารแนบ ๑ หน้า 3)</div>
           <div id="doc-checklist"></div>
 
+          <div id="submit-status-notice"></div>
           <div class="sdiv">การรับรอง</div>
           <div style="font-size:13px;line-height:2;text-align:left">
             <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-bottom:8px">
@@ -1723,6 +1785,40 @@
         </div>
       </section>
 
+      <!-- Step 4: ประวัติการยื่นคำขอ -->
+      <section class="card" id="step-4" style="display:none">
+        <div class="card-hdr">
+          <span class="card-num">04</span>
+          <h2>ประวัติการยื่นคำขอ</h2>
+          <span class="card-sub">รายการคำขอรับค่าตอบแทนพิเศษที่คุณยื่นผ่านระบบนี้</span>
+        </div>
+        <div class="card-body">
+          <div class="notice info">
+            <span class="notice-icon">📄</span>
+            <span>คุณสามารถดูรายละเอียดผลงานที่เคยยื่น หรือดาวน์โหลดบันทึกข้อความ (DOCX) ย้อนหลังของรอบนั้นๆ ได้</span>
+          </div>
+          <div class="table-responsive" style="margin-top:20px; overflow-x:auto;">
+            <table class="history-table" style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="border-bottom:2px solid var(--border); color:var(--muted); font-size:13px;">
+                  <th style="padding:12px 8px;">วัน-เวลายื่น</th>
+                  <th style="padding:12px 8px;">ปีงบประมาณ</th>
+                  <th style="padding:12px 8px;">รอบที่</th>
+                  <th style="padding:12px 8px; text-align:center;">คะแนนรวม (%)</th>
+                  <th style="padding:12px 8px; text-align:center;">สถานะผลรวม</th>
+                  <th style="padding:12px 8px; text-align:center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="history-rows">
+                <tr>
+                  <td colspan="6" style="padding:24px; text-align:center; color:var(--muted);">กำลังโหลดประวัติการยื่นคำขอ...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1737,6 +1833,22 @@
       <div style="padding:0 20px 20px;display:flex;gap:10px;justify-content:flex-end">
         <button class="btn btn-outline" onclick="closeModal()">ปิด</button>
         <button class="btn btn-primary" onclick="dlDocx()">⬇ ดาวน์โหลด .docx</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Submission Details -->
+  <div class="modal-bg" id="history-details-modal">
+    <div class="modal" style="max-width:850px; width:90%;">
+      <div class="modal-hdr">
+        <h3>รายละเอียดผลงานที่ยื่น</h3>
+        <button class="btn-close" onclick="closeHistoryDetailsModal()">✕</button>
+      </div>
+      <div class="modal-body" id="history-details-body" style="padding:20px; max-height:60vh; overflow-y:auto;">
+        <!-- Dynamic content -->
+      </div>
+      <div style="padding:0 20px 20px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="closeHistoryDetailsModal()">ปิด</button>
       </div>
     </div>
   </div>
@@ -1982,12 +2094,233 @@
         el.classList.toggle('active', s === n);
         el.classList.toggle('done', s < n);
       });
-      ['step-1', 'step-2', 'step-3'].forEach(function (id, i) {
+      ['step-1', 'step-2', 'step-3', 'step-4'].forEach(function (id, i) {
         var el = document.getElementById(id);
         if (el) el.style.display = (i + 1 === n) ? 'block' : 'none';
       });
       if (n === 3) buildReview();
+      if (n === 4) loadSubmissionHistory();
       window.scrollTo({ top: 60, behavior: 'smooth' });
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  SUBMISSION HISTORY HANDLERS
+    // ════════════════════════════════════════════════════════════════════════
+    function loadSubmissionHistory() {
+      var rowsEl = document.getElementById('history-rows');
+      if (!rowsEl) return;
+      
+      rowsEl.innerHTML = '<tr><td colspan="6" style="padding:24px; text-align:center; color:var(--muted);">กำลังโหลดประวัติการยื่นคำขอ...</td></tr>';
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function (history) {
+            renderHistoryTable(history);
+          })
+          .withFailureHandler(function (err) {
+            toast('โหลดประวัติล้มเหลว: ' + err.message, 'error');
+            rowsEl.innerHTML = '<tr><td colspan="6" style="padding:24px; text-align:center; color:var(--fail);">เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ</td></tr>';
+          })
+          .getUserSubmissionHistory(currentEmail);
+      } else {
+        // Fallback for local testing
+        setTimeout(function() {
+          var mockHistory = [
+            {
+              timestamp: new Date().toISOString(),
+              email: currentEmail,
+              fullNameTh: 'รุสลี่ สุทธวีร์กูล',
+              position: 'ผู้ช่วยศาสตราจารย์',
+              dept: 'ภาควิชาวิศวกรรมไฟฟ้าและคอมพิวเตอร์',
+              staffType: 'ข้าราชการ',
+              appointDate: '2017-10-01',
+              fieldGroup: 'sci_tech',
+              fiscalYear: '2568',
+              round: '1',
+              totalScore: '1.50',
+              passStatus: 'ผ่านเกณฑ์ภาระงานขั้นต่ำ'
+            }
+          ];
+          renderHistoryTable(mockHistory);
+        }, 800);
+      }
+    }
+
+    function renderHistoryTable(history) {
+      var rowsEl = document.getElementById('history-rows');
+      if (!rowsEl) return;
+      
+      if (!history || history.length === 0) {
+        rowsEl.innerHTML = '<tr><td colspan="6" style="padding:24px; text-align:center; color:var(--muted);">ไม่พบประวัติการยื่นคำขอในระบบ</td></tr>';
+        return;
+      }
+      
+      rowsEl.innerHTML = history.map(function (row) {
+        var date = new Date(row.timestamp);
+        var formattedDate = date.getDate() + '/' + (date.getMonth() + 1) + '/' + (date.getFullYear() + 543) + ' ' + 
+                            String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+        
+        var scorePercent = (parseFloat(row.totalScore || 0) * 100).toFixed(0);
+        var isPass = String(row.passStatus).indexOf('ไม่ผ่าน') === -1;
+        var badgeClass = isPass ? 'pass' : 'fail';
+        var statusText = isPass ? 'ผ่าน' : 'ไม่ผ่าน';
+        
+        return '<tr style="border-bottom:1px solid var(--border-lt);">'
+          + '<td style="padding:12px 8px;">' + formattedDate + '</td>'
+          + '<td style="padding:12px 8px; font-family:var(--ff-en);">' + row.fiscalYear + '</td>'
+          + '<td style="padding:12px 8px; font-family:var(--ff-en);">' + row.round + '</td>'
+          + '<td style="padding:12px 8px; text-align:center; font-family:var(--ff-en); font-weight:600;">' + scorePercent + '%</td>'
+          + '<td style="padding:12px 8px; text-align:center;"><span class="badge-status ' + badgeClass + '">' + statusText + '</span></td>'
+          + '<td style="padding:12px 8px; text-align:center;">'
+          + '  <div class="btn-actions-cell">'
+          + '    <button class="btn-sm btn-info" onclick="viewSubmissionDetails(\'' + row.fiscalYear + '\', \'' + row.round + '\')">ดูผลงาน</button>'
+          + '    <button class="btn-sm btn-download" onclick="downloadMemoForSubmission(\'' + row.fiscalYear + '\', \'' + row.round + '\')">ดาวน์โหลดบันทึก</button>'
+          + '  </div>'
+          + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    function viewSubmissionDetails(fy, round) {
+      try {
+        var bodyEl = document.getElementById('history-details-body');
+        if (!bodyEl) return;
+        
+        bodyEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">กำลังโหลดรายละเอียดผลงาน...</div>';
+        var m = document.getElementById('history-details-modal');
+        if (m) m.classList.add('open');
+        
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function (pubs) {
+              renderSubmissionDetails(pubs, fy, round);
+            })
+            .withFailureHandler(function (err) {
+              bodyEl.innerHTML = '<div style="color:var(--fail);text-align:center;padding:20px;">โหลดข้อมูลล้มเหลว: ' + err.message + '</div>';
+              toast('โหลดข้อมูลล้มเหลว: ' + err.message, 'error');
+            })
+            .getSubmissionDetails(currentEmail, fy, round);
+        } else {
+        // Fallback for local testing
+        setTimeout(function() {
+          var mockPubs = [
+            {
+              title: 'A Novel Deep Learning Approach for Smart Grids',
+              section: '1',
+              tier: 'scopus_q1',
+              role: ['First Author', 'Corresponding Author'],
+              venue: 'IEEE Transactions on Smart Grid',
+              volume: '15',
+              year: '2025',
+              doi: '10.1109/TSG.2025.1234567',
+              driveUrls: [
+                { label: 'pdf', url: 'https://drive.google.com' },
+                { label: 'excel', url: 'https://drive.google.com' }
+              ]
+            }
+          ];
+          renderSubmissionDetails(mockPubs, fy, round);
+        }, 500);
+      }
+      } catch (err) {
+        toast('JS Error: ' + err.message, 'error');
+      }
+    }
+
+    function renderSubmissionDetails(pubs, fy, round) {
+      var bodyEl = document.getElementById('history-details-body');
+      if (!bodyEl) return;
+      
+      if (!pubs || pubs.length === 0) {
+        bodyEl.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px;">ไม่พบรายการผลงานสำหรับคำขอนี้</p>';
+        return;
+      }
+      
+      var html = '<h4 style="margin-bottom:12px;color:var(--navy);">รายการผลงานวิชาการที่ยื่นใน ปีงบประมาณ พ.ศ. ' + fy + ' รอบที่ ' + round + '</h4>';
+      html += '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">'
+        + '<thead>'
+        + '<tr style="border-bottom:2px solid var(--border); color:var(--muted);">'
+        + '  <th style="padding:10px 6px;">ลำดับ</th>'
+        + '  <th style="padding:10px 6px;">ชื่อผลงาน / แหล่งเผยแพร่</th>'
+        + '  <th style="padding:10px 6px;">ประเภท</th>'
+        + '  <th style="padding:10px 6px;">บทบาท</th>'
+        + '  <th style="padding:10px 6px;">เอกสารแนบ</th>'
+        + '</tr>'
+        + '</thead>'
+        + '<tbody>';
+      
+      pubs.forEach(function (p, idx) {
+        var filesHtml = 'ไม่มีไฟล์แนบ';
+        if (p.driveUrls && p.driveUrls.length > 0) {
+          filesHtml = p.driveUrls.map(function(f) {
+            if (f.url) {
+              return '<a href="' + f.url + '" target="_blank" style="color:var(--blue);text-decoration:none;margin-right:8px;font-weight:500;">' + f.label + ' 🔗</a>';
+            } else {
+              return '<span style="color:var(--muted);margin-right:8px;">' + f.label + '</span>';
+            }
+          }).join(', ');
+        }
+        
+        var tierObj = TIERS.find(function(t) { return t.key === p.tier; });
+        var tierLabel = tierObj ? tierObj.label : p.tier;
+        
+        html += '<tr style="border-bottom:1px solid var(--border-lt);">'
+          + '<td style="padding:10px 6px; font-family:var(--ff-en);">' + (idx + 1) + '</td>'
+          + '<td style="padding:10px 6px;">'
+          + '  <div style="font-weight:500;color:var(--text);margin-bottom:2px;">' + p.title + '</div>'
+          + '  <div style="font-size:11px;color:var(--muted);">' + p.venue + ' (ปี ' + p.year + ')</div>'
+          + '</td>'
+          + '<td style="padding:10px 6px;"><span class="tag tag-sm">' + tierLabel + '</span></td>'
+          + '<td style="padding:10px 6px; font-size:12px;">' + (p.role ? p.role.join(', ') : '') + '</td>'
+          + '<td style="padding:10px 6px;">' + filesHtml + '</td>'
+          + '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      bodyEl.innerHTML = html;
+    }
+
+    function closeHistoryDetailsModal() {
+      var m = document.getElementById('history-details-modal');
+      if (m) m.classList.remove('open');
+    }
+
+    function downloadMemoForSubmission(fy, round) {
+      toast('กำลังดึงข้อมูลและสร้างบันทึกข้อความ...', 'info');
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result && result.base64) {
+              var byteCharacters = atob(result.base64);
+              var byteNumbers = new Array(byteCharacters.length);
+              for (var i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              var byteArray = new Uint8Array(byteNumbers);
+              var blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+              
+              var link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = result.fileName || ('บันทึกข้อความ_' + fy + '_รอบ' + round + '.docx');
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              toast('ดาวน์โหลดบันทึกข้อความสำเร็จ', 'success');
+            } else {
+              toast('เกิดข้อผิดพลาดในการสร้างไฟล์', 'error');
+            }
+          })
+          .withFailureHandler(function (err) {
+            toast('ดาวน์โหลดล้มเหลว: ' + err.message, 'error');
+          })
+          .generateDocxMemoForSubmission(currentEmail, fy, round);
+      } else {
+        setTimeout(function() {
+          toast('จำลองดาวน์โหลดไฟล์บันทึกข้อความในระบบทดสอบ', 'success');
+        }, 1000);
+      }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -2118,6 +2451,9 @@
 
       // Refresh validation and sidebar criteria
       updateScorecard();
+      
+      // Trigger duplicate check on load
+      checkExistingSubmissionStatus();
     }
 
     function getCtx() {
@@ -2720,6 +3056,7 @@
                 } else {
                   toast('✓ ยื่นคำขอและบันทึกข้อมูลสำเร็จแล้ว!', 'success');
                   btn.textContent = '✓ ยื่นแล้ว';
+                  checkExistingSubmissionStatus();
                 }
               })
               .withFailureHandler(function (err) {
@@ -2830,6 +3167,88 @@
       t.textContent = msg;
       c.appendChild(t);
       setTimeout(function () { t.remove(); }, 3800);
+    }
+
+    function checkExistingSubmissionStatus() {
+      var email = currentEmail || '';
+      if (!email) return;
+      
+      var fy = document.getElementById('fiscal-year').value;
+      var round = document.getElementById('round').value;
+      var noticeEl = document.getElementById('submit-status-notice');
+      var btnSubmit = document.getElementById('btn-submit');
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(resp) {
+            if (resp && resp.submitted) {
+              var date = new Date(resp.timestamp);
+              var dateStr = date.toLocaleDateString('th-TH', { 
+                year: 'numeric', month: 'long', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+              });
+              
+              if (noticeEl) {
+                noticeEl.innerHTML = '<div style="background-color: var(--warn-bg); border: 1px solid var(--warn-border); padding: 12px; border-radius: var(--r); font-size: 13px; color: var(--warn); margin-bottom: 15px; text-align: left; line-height: 1.5">'
+                  + '⚠️ <strong>ท่านเคยยื่นข้อมูลสำหรับรอบนี้แล้ว:</strong> ยื่นเมื่อ ' + dateStr 
+                  + ' (คะแนนสะสมรวม ' + Math.round((resp.totalScore || 0) * 100) + '%)<br>'
+                  + 'หากต้องการแก้ไขข้อมูล ท่านสามารถยื่นซ้ำได้ ระบบจะบันทึกข้อมูลชุดใหม่เขียนทับข้อมูลเดิม'
+                  + '</div>';
+              }
+              if (btnSubmit) {
+                btnSubmit.textContent = 'ยื่นคำขออีกครั้ง (เขียนทับ)';
+              }
+            } else {
+              if (noticeEl) noticeEl.innerHTML = '';
+              if (btnSubmit) btnSubmit.textContent = 'ยื่นคำขอ';
+            }
+          })
+          .checkSubmissionStatus(email, fy, round);
+      } else {
+        if (noticeEl) noticeEl.innerHTML = '';
+        if (btnSubmit) btnSubmit.textContent = 'ยื่นคำขอ';
+      }
+    }
+
+    function handleLogout(e) {
+      if (e) e.preventDefault();
+      
+      var logoutUrl = 'https://accounts.google.com/Logout';
+      
+      // Completely clear the layout and display sign-out message
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:\'Sarabun\',sans-serif;color:#333;background:#f4f6fa">'
+        + '<div style="background:#fff;padding:40px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;max-width:420px;width:90%">'
+        + '<div style="font-size:48px;margin-bottom:20px">👋</div>'
+        + '<h2 style="margin-bottom:12px;color:#590F16">ออกจากระบบสำเร็จ</h2>'
+        + '<p style="color:#666;font-size:13px;margin-bottom:20px;line-height:1.6">กำลังนำทางไปยังหน้าจอกลางเพื่อทำการลงชื่อออก...</p>'
+        + '<div style="border:3px solid #f3f3f3;border-top:3px solid #921823;border-radius:50%;width:26px;height:26px;animation:spin 1s linear infinite;margin:0 auto 20px"></div>'
+        + '<a href="' + logoutUrl + '" target="_top" style="display:inline-block;padding:8px 16px;font-size:12px;color:#fff;background:#921823;border:none;border-radius:4px;text-decoration:none;font-weight:500;transition:background .2s">คลิกที่นี่หากระบบไม่นำทางโดยอัตโนมัติ</a>'
+        + '</div>'
+        + '</div>'
+        + '<style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>';
+      
+      setTimeout(function() {
+        try {
+          // Programmatic anchor click with target="_top" to bypass Safari cross-origin iframe security
+          var link = document.createElement('a');
+          link.href = logoutUrl;
+          link.target = '_top';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (err) {
+          // Fallback if click fails
+          try {
+            if (window.top) {
+              window.top.location.href = logoutUrl;
+            } else {
+              window.location.href = logoutUrl;
+            }
+          } catch (e2) {
+            window.location.href = logoutUrl;
+          }
+        }
+      }, 1500);
     }
 
 

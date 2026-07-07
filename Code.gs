@@ -235,9 +235,9 @@ function submitApplication(data) {
               var blob = Utilities.newBlob(decoded, fObj.mimeType, fileName);
               var driveFile = targetFolder.createFile(blob);
               driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-              driveUrls.push(key + ': ' + driveFile.getUrl());
+              driveUrls.push({ label: key, url: driveFile.getUrl() });
             } catch (err) {
-              driveUrls.push(key + ': Error (' + err.message + ')');
+              driveUrls.push({ label: key + ' (Error)', url: '' });
             }
           }
         }
@@ -256,14 +256,14 @@ function submitApplication(data) {
         p.volume,
         p.year,
         p.doi,
-        driveUrls.length > 0 ? driveUrls.join('\n') : 'ไม่มีไฟล์แนบ'
+        '' // Placeholder for links
       ]);
+      
+      var lastRow = pubSheet.getLastRow();
+      setCellRichTextLinks_(pubSheet, lastRow, 13, driveUrls);
     }
   }
   
-  // 3. Send email confirmation to the submitter
-  sendConfirmationEmail_(email, data.fullNameTh, data.fiscalYear, data.round, data.totalScore, data.passStatus);
-
   return {
     success: true,
     message: 'ยื่นคำขอสำเร็จและบันทึกข้อมูลลงระบบเรียบร้อยแล้ว'
@@ -434,30 +434,312 @@ function getOrCreateSubfolder_(parentFolder, name) {
   }
 }
 
-function sendConfirmationEmail_(email, name, fiscalYear, round, totalScore, passStatus) {
-  var subject = 'ยืนยันการรับข้อมูลคำเสนอผลงานทางวิชาการ ประจำปีงบประมาณ พ.ศ. ' + fiscalYear + ' (รอบที่ ' + round + ')';
-  
-  var statusText = passStatus ? 'ผ่านเกณฑ์ภาระงานสะสมทางวิชาการ' : 'ไม่ผ่านเกณฑ์ภาระงานสะสมทางวิชาการ';
-  var bodyTh = '<div style="font-family: \'Sarabun\', sans-serif; font-size: 14px; line-height: 1.6; color: #333;">'
-    + '<p>เรียน คุณ ' + name + ',</p>'
-    + '<p>ระบบขอแจ้งให้ทราบว่าได้รับข้อมูลการเสนอผลงานทางวิชาการเพื่อประกอบการขอรับเงินค่าตอบแทนพิเศษของท่าน เรียบร้อยแล้ว โดยมีข้อมูลเบื้องต้นดังนี้:</p>'
-    + '<table style="border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 14px;">'
-    + '<tr><td style="padding: 6px; font-weight: bold; width: 150px; border-bottom: 1px solid #eee;">ปีงบประมาณ</td><td style="padding: 6px; border-bottom: 1px solid #eee;">' + fiscalYear + '</td></tr>'
-    + '<tr><td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">รอบที่</td><td style="padding: 6px; border-bottom: 1px solid #eee;">' + round + '</td></tr>'
-    + '<tr><td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">คะแนนสะสมรวม</td><td style="padding: 6px; border-bottom: 1px solid #eee;">' + Math.round(totalScore * 100) + '%</td></tr>'
-    + '<tr><td style="padding: 6px; font-weight: bold; border-bottom: 1px solid #eee;">ผลการประเมินเบื้องต้น</td><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold; color: ' + (passStatus ? '#2e7d32' : '#c62828') + ';">' + statusText + '</td></tr>'
-    + '</table>'
-    + '<p>ขณะนี้คำขอของท่านอยู่ในระหว่างรอการตรวจสอบความถูกต้องโดยหัวหน้าภาควิชาและคณะต่อไป</p>'
-    + '<p style="margin-top: 25px;">ขอแสดงความนับถือ,<br>คณะวิศวกรรมศาสตร์ มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</p>'
-    + '</div>';
-    
+function checkSubmissionStatus(email, fiscalYear, round) {
+  var submissionSheetId = '1Nyp_b-tPRxSWSE7H_WaiiFrIxjxqqQmrA0ooV1kmaZ8';
+  var ss;
   try {
-    MailApp.sendEmail({
-      to: email,
-      subject: subject,
-      htmlBody: bodyTh
-    });
+    ss = SpreadsheetApp.openById(submissionSheetId);
   } catch (e) {
-    console.error('Failed to send confirmation email: ' + e.message);
+    return { submitted: false };
   }
+  
+  var mainSheet = ss.getSheetByName('Submissions');
+  if (!mainSheet) return { submitted: false };
+  
+  var mainData = mainSheet.getDataRange().getValues();
+  for (var r = 1; r < mainData.length; r++) {
+    var rowEmail = mainData[r][1]; // Column 2: Email
+    var rowFY = String(mainData[r][8]); // Column 9: Fiscal_Year
+    var rowRound = String(mainData[r][9]); // Column 10: Round
+    
+    if (String(rowEmail).toLowerCase().trim() === String(email || '').toLowerCase().trim() &&
+        String(rowFY).trim() === String(fiscalYear).trim() &&
+        String(rowRound).trim() === String(round).trim()) {
+      return {
+        submitted: true,
+        timestamp: mainData[r][0] instanceof Date ? mainData[r][0].toISOString() : String(mainData[r][0]), // Column 1: Timestamp
+        totalScore: mainData[r][10], // Column 11: Total_Score
+        passStatus: mainData[r][11] // Column 12: Pass_Status
+      };
+    }
+  }
+  return { submitted: false };
+}
+
+function setCellRichTextLinks_(sheet, row, col, urls) {
+  var range = sheet.getRange(row, col);
+  if (!urls || urls.length === 0) {
+    range.setValue('ไม่มีไฟล์แนบ');
+    return;
+  }
+  
+  var textParts = [];
+  var linkRanges = [];
+  var currentLength = 0;
+  
+  for (var i = 0; i < urls.length; i++) {
+    var label = urls[i].label || 'ไฟล์แนบ';
+    var url = urls[i].url;
+    var separator = (i > 0 ? ', ' : '');
+    
+    var startIdx = currentLength + separator.length;
+    var endIdx = startIdx + label.length;
+    
+    textParts.push(separator + label);
+    currentLength += separator.length + label.length;
+    
+    if (url) {
+      linkRanges.push({ start: startIdx, end: endIdx, url: url });
+    }
+  }
+  
+  var fullText = textParts.join('');
+  var richText = SpreadsheetApp.newRichTextValue().setText(fullText);
+  for (var j = 0; j < linkRanges.length; j++) {
+    var lr = linkRanges[j];
+    richText.setLinkUrl(lr.start, lr.end, lr.url);
+  }
+  range.setRichTextValue(richText.build());
+}
+
+function getUserSubmissionHistory(email) {
+  var activeEmail = email || Session.getActiveUser().getEmail();
+  if (!activeEmail) throw new Error('ไม่พบข้อมูลอีเมลผู้ใช้');
+  
+  var submissionSheetId = '1Nyp_b-tPRxSWSE7H_WaiiFrIxjxqqQmrA0ooV1kmaZ8';
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(submissionSheetId);
+  } catch (e) {
+    throw new Error('ไม่สามารถเข้าถึงฐานข้อมูลสเปรดชีต (ID: ' + submissionSheetId + ') ได้: ' + e.message);
+  }
+  
+  var mainSheet = ss.getSheetByName('Submissions');
+  if (!mainSheet) {
+    throw new Error('ไม่พบแผ่นงาน "Submissions" ในสเปรดชีตฐานข้อมูล');
+  }
+  
+  var mainData = mainSheet.getDataRange().getValues();
+  var history = [];
+  
+  // Columns: 'Timestamp', 'Email', 'Name', 'Academic_Title', 'Department', 
+  // 'Staff_Type', 'Appoint_Date', 'Field_Group', 'Fiscal_Year', 
+  // 'Round', 'Total_Score', 'Pass_Status'
+  for (var r = 1; r < mainData.length; r++) {
+    var rowEmail = mainData[r][1]; // Column 2: Email
+    if (String(rowEmail).toLowerCase().trim() === String(activeEmail).toLowerCase().trim()) {
+      var ts = mainData[r][0];
+      var tsStr = ts instanceof Date ? ts.toISOString() : String(ts || '');
+      var appoint = mainData[r][6];
+      var appointStr = appoint instanceof Date ? appoint.toISOString().split('T')[0] : String(appoint || '');
+      history.push({
+        timestamp: tsStr,
+        email: rowEmail,
+        fullNameTh: mainData[r][2],
+        position: mainData[r][3],
+        dept: mainData[r][4],
+        staffType: mainData[r][5],
+        appointDate: appointStr,
+        fieldGroup: mainData[r][7],
+        fiscalYear: String(mainData[r][8] || '').trim(),
+        round: String(mainData[r][9] || '').trim(),
+        totalScore: mainData[r][10],
+        passStatus: mainData[r][11]
+      });
+    }
+  }
+  
+  // Sort by timestamp descending
+  history.sort(function(a, b) {
+    return new Date(b.timestamp) - new Date(a.timestamp);
+  });
+  
+  return history;
+}
+
+function getSubmissionDetails(email, fiscalYear, round) {
+  var activeEmail = email || Session.getActiveUser().getEmail();
+  if (!activeEmail) throw new Error('ไม่พบข้อมูลอีเมลผู้ใช้');
+  
+  var submissionSheetId = '1Nyp_b-tPRxSWSE7H_WaiiFrIxjxqqQmrA0ooV1kmaZ8';
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(submissionSheetId);
+  } catch (e) {
+    throw new Error('ไม่สามารถเข้าถึงฐานข้อมูลสเปรดชีต (ID: ' + submissionSheetId + ') ได้: ' + e.message);
+  }
+  
+  var pubSheet = ss.getSheetByName('Publications');
+  if (!pubSheet) {
+    throw new Error('ไม่พบแผ่นงาน "Publications" ในสเปรดชีตฐานข้อมูล');
+  }
+  
+  var pubData = pubSheet.getDataRange().getValues();
+  var pubs = [];
+  
+  // Columns: Timestamp, Email, Fiscal_Year, Round, Title, Section, Tier, Role, Venue, Volume, Year, DOI, Drive_URLs
+  var queryFYVal = parseInt(fiscalYear, 10);
+  var queryRoundVal = parseInt(round, 10);
+  
+  for (var r = 1; r < pubData.length; r++) {
+    var rowEmail = pubData[r][1];
+    var rowFYVal = parseInt(pubData[r][2], 10);
+    var rowRoundVal = parseInt(pubData[r][3], 10);
+    
+    if (String(rowEmail).toLowerCase().trim() === String(activeEmail).toLowerCase().trim() &&
+        rowFYVal === queryFYVal &&
+        rowRoundVal === queryRoundVal) {
+      
+      var range = pubSheet.getRange(r + 1, 13); // Column 13: Drive_URLs
+      var richText = range.getRichTextValue();
+      var driveUrls = [];
+      
+      if (richText) {
+        var text = richText.getText();
+        var runs = richText.getRuns();
+        for (var i = 0; i < runs.length; i++) {
+          var run = runs[i];
+          var url = run.getLinkUrl();
+          var runText = run.getText().replace(/^[,\s]+|[,\s]+$/g, '').trim();
+          if (url && runText) {
+            driveUrls.push({ label: runText, url: url });
+          }
+        }
+        
+        if (driveUrls.length === 0 && text && text !== 'ไม่มีไฟล์แนบ') {
+          driveUrls.push({ label: 'ไฟล์แนบ', url: text });
+        }
+      } else {
+        var val = String(pubData[r][12] || '');
+        if (val && val !== 'ไม่มีไฟล์แนบ') {
+          driveUrls.push({ label: 'ไฟล์แนบ', url: val });
+        }
+      }
+      
+      pubs.push({
+        title: pubData[r][4],
+        section: pubData[r][5],
+        tier: pubData[r][6],
+        role: pubData[r][7] ? String(pubData[r][7]).split(', ') : [],
+        venue: pubData[r][8],
+        volume: pubData[r][9],
+        year: pubData[r][10],
+        doi: pubData[r][11],
+        driveUrls: driveUrls
+      });
+    }
+  }
+  
+  return pubs;
+}
+
+function generateDocxMemoForSubmission(email, fiscalYear, round) {
+  var activeEmail = email || Session.getActiveUser().getEmail();
+  if (!activeEmail) throw new Error('ไม่พบข้อมูลผู้ใช้งาน');
+  
+  var submissionSheetId = '1Nyp_b-tPRxSWSE7H_WaiiFrIxjxqqQmrA0ooV1kmaZ8';
+  var ss = SpreadsheetApp.openById(submissionSheetId);
+  var mainSheet = ss.getSheetByName('Submissions');
+  if (!mainSheet) throw new Error('ไม่พบแผ่นงาน Submissions');
+  
+  var mainData = mainSheet.getDataRange().getValues();
+  var subRecord = null;
+  var queryFYVal = parseInt(fiscalYear, 10);
+  var queryRoundVal = parseInt(round, 10);
+  
+  for (var r = 1; r < mainData.length; r++) {
+    var rowEmail = mainData[r][1];
+    var rowFYVal = parseInt(mainData[r][8], 10);
+    var rowRoundVal = parseInt(mainData[r][9], 10);
+    
+    if (String(rowEmail).toLowerCase().trim() === String(activeEmail).toLowerCase().trim() &&
+        rowFYVal === queryFYVal &&
+        rowRoundVal === queryRoundVal) {
+      var appoint = mainData[r][6];
+      var appointStr = appoint instanceof Date ? appoint.toISOString().split('T')[0] : String(appoint || '');
+      subRecord = {
+        fullNameTh: mainData[r][2],
+        position: mainData[r][3],
+        dept: mainData[r][4],
+        staffType: mainData[r][5],
+        appointDate: appointStr,
+        fiscalYear: String(mainData[r][8] || '').trim(),
+        round: String(mainData[r][9] || '').trim(),
+      };
+      break;
+    }
+  }
+  
+  if (!subRecord) {
+    throw new Error('ไม่พบข้อมูลคำขอนี้ในระบบ');
+  }
+  
+  subRecord.pubs = getSubmissionDetails(activeEmail, fiscalYear, round);
+  return generateDocxMemo(subRecord);
+}
+
+function getSubmissionDebugInfo(email) {
+  var activeEmail = email || Session.getActiveUser().getEmail();
+  var submissionSheetId = '1Nyp_b-tPRxSWSE7H_WaiiFrIxjxqqQmrA0ooV1kmaZ8';
+  var info = {
+    queriedEmail: activeEmail,
+    sessionEmail: Session.getActiveUser().getEmail(),
+    effectiveEmail: Session.getEffectiveUser().getEmail(),
+    sheetExists: false,
+    submissionsCount: 0,
+    matchedCount: 0,
+    allEmailsInSheet: [],
+    pubSheetExists: false,
+    pubCount: 0,
+    pubMatchedCount: 0,
+    pubSamples: []
+  };
+  
+  try {
+    var ss = SpreadsheetApp.openById(submissionSheetId);
+    var mainSheet = ss.getSheetByName('Submissions');
+    if (mainSheet) {
+      info.sheetExists = true;
+      var mainData = mainSheet.getDataRange().getValues();
+      info.submissionsCount = Math.max(0, mainData.length - 1);
+      
+      var emails = {};
+      for (var r = 1; r < mainData.length; r++) {
+        var rowEmail = String(mainData[r][1]).toLowerCase().trim();
+        emails[rowEmail] = (emails[rowEmail] || 0) + 1;
+        if (rowEmail === String(activeEmail).toLowerCase().trim()) {
+          info.matchedCount++;
+        }
+      }
+      info.allEmailsInSheet = Object.keys(emails);
+    }
+    
+    var pubSheet = ss.getSheetByName('Publications');
+    if (pubSheet) {
+      info.pubSheetExists = true;
+      var pubData = pubSheet.getDataRange().getValues();
+      info.pubCount = Math.max(0, pubData.length - 1);
+      
+      for (var p = 1; p < pubData.length; p++) {
+        var pEmail = String(pubData[p][1]).toLowerCase().trim();
+        var pFY = String(pubData[p][2]).trim();
+        var pRound = String(pubData[p][3]).trim();
+        
+        if (pEmail === String(activeEmail).toLowerCase().trim()) {
+          info.pubMatchedCount++;
+          if (info.pubSamples.length < 3) {
+            info.pubSamples.push({
+              title: pubData[p][4],
+              fy: pFY,
+              round: pRound,
+              email: pEmail
+            });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    info.error = e.message;
+  }
+  return info;
 }
