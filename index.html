@@ -1661,7 +1661,7 @@
               <span class="field-label">ชื่อ-นามสกุล (ไทย)</span>
               <div class="field-value" id="pf-name-th">รุสลี่ สุทธวีร์กูล</div>
             </div>
-            <div class="field">
+            <div class="field" style="display:none">
               <span class="field-label">ชื่อ-นามสกุล (EN)</span>
               <div class="field-value mono" id="pf-name-en">Ruslee Sutthaweekul</div>
             </div>
@@ -1739,6 +1739,10 @@
           <div class="notice info">
             <span class="notice-icon">ℹ</span>
             <span><strong>การนับผลงานย้อนหลัง:</strong> สามารถใช้ผลงานย้อนหลังได้ไม่เกิน 2 ปีงบประมาณ โดยเริ่มนับตั้งแต่วันที่ <strong>1 ตุลาคม 2568</strong> เป็นต้นไป และผลงานแต่ละรายการสามารถนำมาเสนอขอรับค่าตอบแทนพิเศษนี้ได้เพียง <strong>1 ครั้งเท่านั้น</strong> (ไม่สามารถใช้ซ้ำได้)</span>
+          </div>
+          <div class="notice info">
+            <span class="notice-icon">ℹ</span>
+            <span><strong>หมายเหตุ:</strong> เอกสารและหลักฐานทั้งหมดที่ยื่นผ่านระบบนี้ จะถูกตรวจสอบความถูกต้องโดยงานวิจัยของคณะฯ อีกครั้งหนึ่ง</span>
           </div>
           <div class="pub-list" id="pub-list"></div>
           <button class="btn-add-pub" onclick="addPub()">
@@ -2245,7 +2249,11 @@
         return;
       }
       
-      var html = '<h4 style="margin-bottom:12px;color:var(--navy);">รายการผลงานวิชาการที่ยื่นใน ปีงบประมาณ พ.ศ. ' + fy + ' รอบที่ ' + round + '</h4>';
+      var name = (document.getElementById('pf-name-th') || {}).textContent || '';
+      var pos = (document.getElementById('pf-position') || {}).value || '';
+      var fullAcadName = getFullAcademicName(name, pos, currentHasDr);
+      
+      var html = '<h4 style="margin-bottom:12px;color:var(--navy);">รายการผลงานวิชาการที่ยื่นใน ปีงบประมาณ พ.ศ. ' + fy + ' รอบที่ ' + round + ' ของ ' + fullAcadName + '</h4>';
       html += '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">'
         + '<thead>'
         + '<tr style="border-bottom:2px solid var(--border); color:var(--muted);">'
@@ -2405,7 +2413,7 @@
             titleTh = t;
           }
         }
-        fullNameTh = (titleTh ? titleTh + ' ' : '') + profile.Fullname + ' ' + (profile.Surname || '');
+        fullNameTh = (titleTh ? titleTh : '') + profile.Fullname + ' ' + (profile.Surname || '');
         fullNameTh = fullNameTh.replace(/\s+/g, ' ').trim();
       } else {
         fullNameTh = profile.fullNameTh || '';
@@ -2833,7 +2841,7 @@
         + '<table style="width:100%;font-size:13px;margin-bottom:15px;border-collapse:collapse;border-bottom:2px solid #333;padding-bottom:10px">'
         + '<tr><td style="width:90px;font-weight:bold;padding:4px 0">ส่วนราชการ</td><td>' + dept + '</td></tr>'
         + '<tr><td style="font-weight:bold;padding:4px 0">ที่</td><td></td><td style="width:60px;font-weight:bold;padding:4px 0;text-align:right">วันที่</td><td style="width:160px;padding:4px 0;text-align:right">' + thaiDateStr + '</td></tr>'
-        + '<tr><td style="font-weight:bold;padding:4px 0">เรื่อง</td><td colspan="3">ขอเสนอผลงานทางวิชาการเพื่อประกอบการขอรับค่าตอบแทนพิเศษ ประจำปีงบประมาณ พ.ศ. ' + fy + ' รอบที่ ' + round + '</td></tr></table>'
+        + '<tr><td style="font-weight:bold;padding:4px 0">เรื่อง</td><td colspan="3">ขอเสนอผลงานทางวิชาการเพื่อประกอบการขอรับค่าตอบแทนพิเศษ ประจำปีงบประมาณ พ.ศ. ' + fy + ' รอบที่ ' + round + ' ของ ' + getFullAcademicName(name, pos, currentHasDr) + '</td></tr></table>'
 
         + '<p style="margin:10px 0;font-weight:bold">เรียน&nbsp;&nbsp;&nbsp;&nbsp;คณบดีคณะวิศวกรรมศาสตร์</p>'
 

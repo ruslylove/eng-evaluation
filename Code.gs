@@ -2,6 +2,47 @@
  * Serves the HTML page.
  */
 function doGet() {
+  var userEmail = Session.getActiveUser().getEmail();
+  
+  // If the email is blank or does not belong to kmutnb.ac.th (case-insensitive)
+  if (!userEmail || !/@.*kmutnb\.ac\.th$/i.test(userEmail)) {
+    return HtmlService.createHtmlOutput(
+      '<!DOCTYPE html>' +
+      '<html>' +
+      '<head>' +
+      '  <meta charset="UTF-8">' +
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+      '  <title>เข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย — คณะวิศวกรรมศาสตร์ มจพ.</title>' +
+      '  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' +
+      '  <style>' +
+      '    body { font-family: "Sarabun", sans-serif; background-color: #F4F6FA; color: #1A2535; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }' +
+      '    .error-card { background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; max-width: 480px; width: 100%; border-top: 4px solid #921823; }' +
+      '    .icon { font-size: 56px; margin-bottom: 20px; color: #921823; }' +
+      '    h2 { margin-top: 0; margin-bottom: 16px; color: #590F16; font-size: 20px; font-weight: 600; }' +
+      '    p { color: #556376; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }' +
+      '    .email-info { background: #FAF0F1; border: 1px solid #F5C0BC; border-radius: 6px; padding: 12px; margin-bottom: 24px; font-size: 13px; font-weight: 500; color: #B52A2A; text-align: left; word-break: break-all; }' +
+      '    .btn { display: inline-block; padding: 10px 24px; color: #fff; background: #921823; border-radius: 4px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background .2s; }' +
+      '    .btn:hover { background: #B52635; }' +
+      '  </style>' +
+      '</head>' +
+      '<body>' +
+      '  <div class="error-card">' +
+      '    <div class="icon">🔒</div>' +
+      '    <h2>กรุณาเข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย</h2>' +
+      '    <p>ระบบนี้เปิดให้ใช้งานเฉพาะบุคลากรคณะวิศวกรรมศาสตร์ มจพ. เท่านั้น กรุณาลงชื่อเข้าใช้งานด้วยบัญชี Google ของทางมหาวิทยาลัย</p>' +
+      '    <div class="email-info">' +
+      '      <strong>อีเมลที่พบในปัจจุบัน:</strong> ' + (userEmail ? userEmail : 'ไม่ระบุตัวตน / บัญชีภายนอก (Gmail)') + '<br>' +
+      '      <strong>โดเมนที่ได้รับอนุญาต:</strong> @eng.kmutnb.ac.th หรือ @kmutnb.ac.th' +
+      '    </div>' +
+      '    <a href="https://accounts.google.com/Logout" target="_top" class="btn">สลับบัญชี Google (Switch Account)</a>' +
+      '  </div>' +
+      '</body>' +
+      '</html>'
+    )
+    .setTitle('กรุณาเข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย — คณะวิศวกรรมศาสตร์ มจพ.')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
   return HtmlService.createTemplateFromFile('index')
     .evaluate()
     .setTitle('ยื่นขอค่าตอบแทนพิเศษ — คณะวิศวกรรมศาสตร์ มจพ.')
@@ -303,6 +344,30 @@ function generateDocxMemo(data) {
   body.replaceText('{{DEPT}}', data.dept || '');
   body.replaceText('{{STAFF_TYPE}}', data.staffType || '');
   body.replaceText('{{APPOINT_DATE}}', data.appointDate || '');
+  // Target Subject line to append the submitter's academic name specifically
+  var paragraphs = body.getParagraphs();
+  for (var i = 0; i < paragraphs.length; i++) {
+    var p = paragraphs[i];
+    var text = p.getText();
+    if (text.indexOf('เรื่อง') !== -1 && text.indexOf('ขอเสนอผลงาน') !== -1) {
+      p.replaceText('\\{\\{ROUND\\}\\}', (data.round || '') + ' ของ ' + (fullAcadName || ''));
+    }
+  }
+  var tables = body.getTables();
+  for (var t = 0; t < tables.length; t++) {
+    var tbl = tables[t];
+    for (var r = 0; r < tbl.getNumRows(); r++) {
+      var row = tbl.getRow(r);
+      for (var c = 0; c < row.getNumCells(); c++) {
+        var cell = row.getCell(c);
+        var text = cell.getText();
+        if (text.indexOf('เรื่อง') !== -1 && text.indexOf('ขอเสนอผลงาน') !== -1) {
+          cell.replaceText('\\{\\{ROUND\\}\\}', (data.round || '') + ' ของ ' + (fullAcadName || ''));
+        }
+      }
+    }
+  }
+
   body.replaceText('{{FISCAL_YEAR}}', data.fiscalYear || '');
   body.replaceText('{{ROUND}}', data.round || '');
   
@@ -389,6 +454,7 @@ function generateDocxMemo(data) {
         for (var c = 0; c < newRow.getNumCells(); c++) {
           var cell = newRow.getCell(c);
           cell.setFontSize(16);
+          cell.setBold(false); // Explicitly remove bold styling inherited from the header
           if (c === 0 || c === 2 || c === 3 || c === 4) {
             cell.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
           }
