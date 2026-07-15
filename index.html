@@ -2083,7 +2083,7 @@
     ];
 
     const ATTACH_RULES = [
-      { key: 'acceptance', icon: '📨', label: 'แบบตอบรับการตีพิมพ์', hint: 'Letter of acceptance จากวารสารหรือ proceedings', required: true, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
+      { key: 'acceptance', icon: '📨', label: 'แบบตอบรับการตีพิมพ์', hint: 'Letter of acceptance จากวารสารหรือ proceedings (สามารถใช้ Screenshot ข้อความในอีเมลได้)', required: true, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
       { key: 'first_page', icon: '📄', label: 'หน้าแรกของผลงาน (ถ้าตีพิมพ์แล้ว)', hint: 'หน้าปกหรือหน้า 1 ของบทความ', required: false, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
       { key: 'db_evidence', icon: '🔍', label: 'หลักฐานปรากฏในฐานข้อมูล', hint: 'Screenshot Scopus/TCI แสดง Quartile หรือกลุ่ม TCI', required: true, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
       { key: 'patent_cert', icon: '📜', label: 'ใบรับรองสิทธิบัตร/อนุสิทธิบัตร', hint: 'ใบรับรองจากกรมทรัพย์สินทางปัญญา', required: true, show: function (p) { return ['patent', 'petty_pat'].includes(p.tier); } },
@@ -3063,6 +3063,7 @@
             totalScore: res.score,
             passStatus: res.pass,
             overwrite: overwrite === true,
+            isAdmin: ctx.isAdmin,
             pubs: pubsPayload
           };
 

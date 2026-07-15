@@ -165,9 +165,12 @@ function submitApplication(data) {
     mainSheet.appendRow([
       'Timestamp', 'Email', 'Name', 'Academic_Title', 'Department', 
       'Staff_Type', 'Appoint_Date', 'Field_Group', 'Fiscal_Year', 
-      'Round', 'Total_Score', 'Pass_Status'
+      'Round', 'Total_Score', 'Pass_Status', 'Role_Type'
     ]);
-    mainSheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#f3f3f3');
+    mainSheet.getRange(1, 1, 1, 13).setFontWeight('bold').setBackground('#f3f3f3');
+  } else if (mainSheet.getLastColumn() === 12) {
+    // If the sheet already exists but only has 12 columns, add 'Role_Type' as column 13
+    mainSheet.getRange(1, 13).setValue('Role_Type').setFontWeight('bold').setBackground('#f3f3f3');
   }
   
   var existingRowIdx = -1;
@@ -227,7 +230,8 @@ function submitApplication(data) {
     data.fiscalYear,
     data.round,
     data.totalScore,
-    data.passStatus ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์'
+    data.passStatus ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์',
+    data.isAdmin ? 'ผู้บริหาร' : 'อาจารย์ประจำ'
   ]);
   
   // 2. Save individual publications
@@ -745,6 +749,8 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
       totalScore = parseFloat(mainData[r][10] || 0);
       passStatus = String(mainData[r][11] || 'ไม่ผ่านเกณฑ์').trim();
       
+      var roleType = mainData[r].length > 12 ? String(mainData[r][12] || '').trim() : '';
+      
       subRecord = {
         email: activeEmail,
         fullNameTh: mainData[r][2],
@@ -756,7 +762,8 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
         fiscalYear: String(mainData[r][8] || '').trim(),
         round: String(mainData[r][9] || '').trim(),
         totalPct: Math.round(totalScore * 100),
-        passStatus: passStatus
+        passStatus: passStatus,
+        roleType: roleType
       };
       break;
     }
@@ -768,8 +775,15 @@ function generateDocxMemoForSubmission(email, fiscalYear, round) {
   
   subRecord.pubs = getSubmissionDetails(activeEmail, fiscalYear, round);
   
-  // Deduce isAdmin status from total score
-  var isAdmin = determineIsAdmin(subRecord.pubs, subRecord.position, subRecord.fieldGroup, totalScore);
+  // Use saved roleType directly if available, otherwise fall back to deduction
+  var isAdmin = false;
+  if (subRecord.roleType === 'ผู้บริหาร') {
+    isAdmin = true;
+  } else if (subRecord.roleType === 'อาจารย์ประจำ') {
+    isAdmin = false;
+  } else {
+    isAdmin = determineIsAdmin(subRecord.pubs, subRecord.position, subRecord.fieldGroup, totalScore);
+  }
   
   // Calculate publication scores
   for (var i = 0; i < subRecord.pubs.length; i++) {
