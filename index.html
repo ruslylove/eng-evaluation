@@ -1560,9 +1560,9 @@
     <div class="tb-div"></div>
     <span class="topbar-title">ระบบยื่นขอค่าตอบแทนพิเศษตามเกณฑ์มาตรฐานภาระงานวิชาการ</span>
     <div class="topbar-user">
-      <div class="avatar" id="av">RS</div>
+      <div class="avatar" id="av">..</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end">
-        <span id="user-name" style="line-height:1.2">รุสลี่ สุทธวีร์กูล</span>
+        <span id="user-name" style="line-height:1.2">กำลังโหลด...</span>
         <a href="#" onclick="handleLogout(event)"
           style="color:rgba(255,255,255,.6);font-size:10px;text-decoration:none;line-height:1.2"
           onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.6)'">ออกจากระบบ ✕</a>
@@ -1645,7 +1645,7 @@
           <div class="profile-grid">
             <div class="field">
               <span class="field-label">Email</span>
-              <div class="field-value mono" id="pf-email">ruslee.s@eng.kmutnb.ac.th</div>
+              <div class="field-value mono" id="pf-email">กำลังโหลด...</div>
             </div>
             <div class="field">
               <span class="field-label">ตำแหน่งทางวิชาการ <span style="color:var(--fail)">*</span></span>
@@ -1659,15 +1659,15 @@
             </div>
             <div class="field">
               <span class="field-label">ชื่อ-นามสกุล (ไทย)</span>
-              <div class="field-value" id="pf-name-th">รุสลี่ สุทธวีร์กูล</div>
+              <div class="field-value" id="pf-name-th">กำลังโหลด...</div>
             </div>
             <div class="field" style="display:none">
               <span class="field-label">ชื่อ-นามสกุล (EN)</span>
-              <div class="field-value mono" id="pf-name-en">Ruslee Sutthaweekul</div>
+              <div class="field-value mono" id="pf-name-en">กำลังโหลด...</div>
             </div>
             <div class="field" style="grid-column:1/-1">
               <span class="field-label">ภาควิชา / สังกัด</span>
-              <div class="field-value" id="pf-dept">ภาควิชาวิศวกรรมไฟฟ้าและคอมพิวเตอร์</div>
+              <div class="field-value" id="pf-dept">กำลังโหลด...</div>
             </div>
           </div>
 
@@ -2357,6 +2357,10 @@
       if (nameEnEl) nameEnEl.textContent = 'กำลังโหลด...';
       var deptEl = document.getElementById('pf-dept');
       if (deptEl) deptEl.textContent = 'กำลังโหลด...';
+      var userNameEl = document.getElementById('user-name');
+      if (userNameEl) userNameEl.textContent = 'กำลังโหลด...';
+      var avatarEl = document.getElementById('av');
+      if (avatarEl) avatarEl.textContent = '..';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
@@ -2873,7 +2877,7 @@
         + '  <div style="font-weight:bold;margin-bottom:10px">ตรวจสอบแล้ว</div>'
         + '  <div style="margin-bottom:5px">ลงชื่อ..........................................................</div>'
         + '  <div style="margin-bottom:5px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( ' + (currentDeptHead ? currentDeptHead : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;') + ' )</div>'
-        + '  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;หัวหน้าภาควิชา</div>'
+        + '  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;หัวหน้าภาควิชา' + (dept ? dept.replace(/^ภาควิชา/, '') : '') + '</div>'
         + '</td>'
         + '<td style="width:50%;vertical-align:top;text-align:right">'
         + '  <div style="margin-bottom:5px;margin-top:25px">ลงชื่อ..........................................................</div>'
