@@ -1706,7 +1706,7 @@
           <div class="sdiv">ระยะเวลาที่ยื่น</div>
           <div class="period-bar">
             <span style="font-size:13px;color:var(--muted)">ปีงบประมาณ พ.ศ.</span>
-            <select id="fiscal-year" onchange="checkExistingSubmissionStatus()">
+            <select id="fiscal-year" onchange="checkExistingSubmissionStatus(); renderPubs();">
               <option value="2569" selected>2569</option>
               <option value="2568">2568</option>
             </select>
@@ -2083,9 +2083,60 @@
     ];
 
     const ATTACH_RULES = [
-      { key: 'acceptance', icon: '📨', label: 'แบบตอบรับการตีพิมพ์', hint: 'Letter of acceptance จากวารสารหรือ proceedings (สามารถใช้ Screenshot ข้อความในอีเมลได้)', required: true, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
-      { key: 'first_page', icon: '📄', label: 'หน้าแรกของผลงาน (ถ้าตีพิมพ์แล้ว)', hint: 'หน้าปกหรือหน้า 1 ของบทความ', required: false, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
-      { key: 'db_evidence', icon: '🔍', label: 'หลักฐานปรากฏในฐานข้อมูล', hint: 'Screenshot Scopus/TCI แสดง Quartile หรือกลุ่ม TCI', required: true, show: function (p) { return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier); } },
+      {
+        key: 'full_paper',
+        icon: '📄',
+        label: 'บทความฉบับเต็ม',
+        hint: 'บทความฉบับเต็ม (Full Paper)',
+        required: true,
+        show: function (p) {
+          return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier);
+        }
+      },
+      {
+        key: 'acceptance',
+        icon: '📨',
+        label: 'แบบตอบรับการตีพิมพ์ (Letter of Acceptance)',
+        hint: 'แบบตอบรับการตีพิมพ์จากวารสาร (สามารถใช้ Screenshot ข้อความในอีเมลตอบรับได้)',
+        required: true,
+        show: function (p) {
+          var isJournal = ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'review_article', 'book_chapter'].includes(p.tier);
+          if (!isJournal) return false;
+          if (p.pubStatus === 'accepted_not_indexed') return true;
+          if (p.pubStatus === 'published_scopus') {
+            return p.claimDateType === 'accept_date';
+          }
+          return false;
+        }
+      },
+      {
+        key: 'db_evidence',
+        icon: '🔍',
+        label: 'หลักฐานปรากฏในฐานข้อมูล',
+        hint: function (p) {
+          if (p.pubStatus === 'accepted_not_indexed') {
+            return 'Screenshot ข้อมูลของวารสารจากฐานข้อมูล Scopus/TCI แสดงกลุ่ม/Quartile ของวารสารนั้นๆ (เนื่องจากบทความของท่านยังไม่ได้ขึ้นฐานข้อมูล)';
+          }
+          if (p.pubStatus === 'proceeding_scopus') {
+            return 'Screenshot จาก Scopus แสดงชื่อเรื่อง หรือชื่อการจัดประชุมวิชาการ (Conference)';
+          }
+          return 'Screenshot จาก Scopus/TCI แสดงชื่อเรื่อง, ชื่อผู้แต่ง (Author) และ Quartile หรือกลุ่ม TCI';
+        },
+        required: true,
+        show: function (p) {
+          return ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc', 'review_article', 'book_chapter'].includes(p.tier);
+        }
+      },
+      {
+        key: 'proc_evidence',
+        icon: '📜',
+        label: 'หลักฐานการเผยแพร่/การจัดประชุม',
+        hint: 'หลักฐานตอบรับให้เผยแพร่ใน Scopus (ไม่ใช่หนังสือตอบรับเข้าร่วมเพื่อนำเสนอ) หรือหลักฐานที่แสดงวันที่จัดประชุมวิชาการ (Conference)',
+        required: true,
+        show: function (p) {
+          return p.tier === 'full_proc';
+        }
+      },
       { key: 'patent_cert', icon: '📜', label: 'ใบรับรองสิทธิบัตร/อนุสิทธิบัตร', hint: 'ใบรับรองจากกรมทรัพย์สินทางปัญญา', required: true, show: function (p) { return ['patent', 'petty_pat'].includes(p.tier); } },
       { key: 'artwork_cert', icon: '🏆', label: 'ใบแสดงผลงานศิลปกรรม/รางวัล', hint: 'ใบรับรองรางวัลระดับชาติ/นานาชาติ หรือใบแสดงในหอศิลป์', required: true, show: function (p) { return ['artwork_intl', 'artwork_nat'].includes(p.tier); } },
       { key: 'author_confirm', icon: '✉️', label: 'หนังสือยืนยันการเสนอผลงาน', hint: 'กรณี First/Corresponding author เป็นอาจารย์ที่มีสิทธิ์', required: false, show: function (p) { return p.role.length > 0 && ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'full_proc'].includes(p.tier); } },
@@ -2518,10 +2569,9 @@
     // ════════════════════════════════════════════════════════════════════════
     function addPub() {
       uid++;
-      pubs.push({ id: uid, section: '1', title: '', authors: '', venue: '', volume: '', pages: '', year: '', tier: '', role: [], doi: '', files: {} });
+      pubs.push({ id: uid, section: '1', title: '', authors: '', venue: '', volume: '', pages: '', year: '', tier: '', pubStatus: '', claimDateType: '', claimDate: '', role: [], doi: '', files: {}, isOpen: true });
       renderPubs();
       updateScorecard();
-      setTimeout(function () { togglePub(uid, true); }, 40);
     }
 
     function removePub(id) {
@@ -2533,8 +2583,15 @@
     function togglePub(id, force) {
       var el = document.getElementById('pub-' + id);
       if (!el) return;
-      if (force !== undefined) el.classList.toggle('open', force);
-      else el.classList.toggle('open');
+      var p = pubs.find(function (p) { return p.id === id; });
+      var openState = false;
+      if (force !== undefined) {
+        openState = force;
+        el.classList.toggle('open', force);
+      } else {
+        openState = el.classList.toggle('open');
+      }
+      if (p) p.isOpen = openState;
     }
 
     function setPubField(id, field, val) {
@@ -2549,10 +2606,37 @@
         var t = TIERS.find(function (t) { return t.key === val; });
         var tag = document.getElementById('pub-tag-' + id);
         if (tag) { tag.textContent = t ? t.label : ''; tag.className = 'pub-tier-tag ' + (t ? t.tagCls : ''); }
+        
+        // Initialize default pubStatus and claimDateType
+        if (val === 'full_proc') {
+          p.pubStatus = 'proceeding_scopus';
+          p.claimDateType = 'accept_date';
+        } else if (['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'review_article', 'book_chapter'].includes(val)) {
+          p.pubStatus = 'published_scopus';
+          p.claimDateType = 'pub_date';
+        } else {
+          p.pubStatus = '';
+          p.claimDateType = '';
+          p.claimDate = '';
+        }
+        
+        renderPubs();
+        refreshAttach(id);
+      }
+      if (field === 'pubStatus') {
+        if (val === 'accepted_not_indexed') {
+          p.claimDateType = 'accept_date';
+        } else if (p.tier !== 'full_proc') {
+          p.claimDateType = 'pub_date';
+        }
+        renderPubs();
+        refreshAttach(id);
+      }
+      if (field === 'claimDateType') {
         refreshAttach(id);
       }
       if (field === 'section') refreshAttach(id);
-      if (field === 'tier' || field === 'role') updateScorecard();
+      if (field === 'tier' || field === 'role' || field === 'pubStatus' || field === 'claimDate' || field === 'claimDateType') updateScorecard();
     }
 
     function toggleRole(id, role, checked) {
@@ -2581,10 +2665,12 @@
         var f = p.files[r.key];
         var done = !!f;
         var badge = r.required ? '<span class="attach-req req-badge">จำเป็น</span>' : '<span class="attach-req opt-badge">ถ้ามี</span>';
+        var labelVal = typeof r.label === 'function' ? r.label(p) : r.label;
+        var hintVal = typeof r.hint === 'function' ? r.hint(p) : r.hint;
         return '<div class="attach-slot ' + (done ? 'done' : r.required ? 'missing' : '') + '" id="aslot-' + p.id + '-' + r.key + '">'
           + '<div class="attach-slot-top"><span class="attach-icon">' + r.icon + '</span>'
-          + '<div class="attach-info"><div class="attach-label">' + r.label + badge + '</div>'
-          + '<div class="attach-hint">' + r.hint + '</div></div></div>'
+          + '<div class="attach-info"><div class="attach-label">' + labelVal + badge + '</div>'
+          + '<div class="attach-hint">' + hintVal + '</div></div></div>'
           + (done
             ? '<div class="file-chip">📎 ' + esc(f.name) + '<button class="file-rm" onclick="rmFile(' + p.id + ',\'' + r.key + '\')">✕</button></div>'
             : '<label class="attach-btn">เลือกไฟล์ PDF/JPG/PNG<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="pickFile(' + p.id + ',\'' + r.key + '\',this)"></label>'
@@ -2602,6 +2688,69 @@
     function rmFile(id, key) {
       var p = pubs.find(function (p) { return p.id === id; });
       if (p) { delete p.files[key]; refreshAttach(id); }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  RENDER PUBLICATIONS
+    // ════════════════════════════════════════════════════════════════════════
+    function getPubStatusOptions(tier, selectedStatus) {
+      var options = [];
+      if (tier === 'full_proc') {
+        options.push({ value: 'proceeding_scopus', label: 'Proceeding ที่จัดอยู่ในฐานข้อมูล SCOPUS' });
+      } else {
+        options.push({ value: 'published_scopus', label: 'ตีพิมพ์ในฐานข้อมูล Scopus/TCI แล้ว' });
+        options.push({ value: 'accepted_not_indexed', label: 'วารสารตอบรับการตีพิมพ์แล้ว แต่ยังไม่ลงฐานข้อมูล (Scopus/TCI)' });
+      }
+      return options.map(function (opt) {
+        var sel = opt.value === selectedStatus ? 'selected' : '';
+        return '<option value="' + opt.value + '" ' + sel + '>' + opt.label + '</option>';
+      }).join('');
+    }
+
+    function getClaimDateTypeOptions(tier, status, selectedType) {
+      var options = [];
+      if (tier === 'full_proc') {
+        options.push({ value: 'accept_date', label: 'วันที่ได้รับการตอบรับให้เผยแพร่ใน Scopus' });
+        options.push({ value: 'conf_date', label: 'วันที่จัดประชุมวิชาการ (Conference Date)' });
+      } else {
+        if (status === 'accepted_not_indexed') {
+          options.push({ value: 'accept_date', label: 'วันที่ได้รับการตอบรับ (Acceptance Date)' });
+        } else {
+          options.push({ value: 'pub_date', label: 'วันที่ได้รับการตีพิมพ์ (Publication Date)' });
+          options.push({ value: 'accept_date', label: 'วันที่ได้รับการตอบรับ (Acceptance Date)' });
+        }
+      }
+      return options.map(function (opt) {
+        var sel = opt.value === selectedType ? 'selected' : '';
+        return '<option value="' + opt.value + '" ' + sel + '>' + opt.label + '</option>';
+      }).join('');
+    }
+
+    function getClaimDateRange() {
+      var fyVal = parseInt((document.getElementById('fiscal-year') || {}).value) || 2569;
+      var fyAD = fyVal - 543;
+      
+      var maxStr = fyAD + '-09-30';
+      var minStr = (fyAD - 2) + '-10-01';
+      
+      // Special first-year constraint for FY 2569: starts from 1 October 2568
+      if (fyVal === 2569) {
+        minStr = '2025-10-01';
+      }
+      
+      function getShortThaiDate(dateStr) {
+        var parts = dateStr.split('-');
+        var yShort = String(parseInt(parts[0]) + 543).substring(2, 4);
+        var mShort = parts[1] === '10' ? 'ต.ค.' : 'ก.ย.';
+        var d = parseInt(parts[2]);
+        return d + ' ' + mShort + ' ' + yShort;
+      }
+      
+      return {
+        min: minStr,
+        max: maxStr,
+        hint: 'ต้องอยู่ระหว่าง ' + getShortThaiDate(minStr) + ' – ' + getShortThaiDate(maxStr)
+      };
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -2625,7 +2774,30 @@
         var tierSel = tierOpts.replace('value="' + p.tier + '"', 'value="' + p.tier + '" selected');
         var secSel = secOpts.replace('value="' + p.section + '"', 'value="' + p.section + '" selected');
 
-        return '<div class="pub-item" id="pub-' + p.id + '">'
+        var isJournalOrProc = ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'review_article', 'book_chapter', 'full_proc'].includes(p.tier);
+        var statusRowHtml = '';
+        var dateFieldsHtml = '';
+        if (isJournalOrProc) {
+          var range = getClaimDateRange();
+
+          statusRowHtml = '<div class="form-row" style="margin-top:12px">'
+            + '<label class="form-label">สถานะการเผยแพร่/ตีพิมพ์ <span class="req">*</span></label>'
+            + '<select onchange="setPubField(' + p.id + ',\'pubStatus\',this.value)">'
+            + getPubStatusOptions(p.tier, p.pubStatus)
+            + '</select></div>';
+
+          dateFieldsHtml = '<div class="form-grid-2" style="margin-top:12px">'
+            + '<div class="form-row"><label class="form-label">ประเภทวันที่ใช้เคลมสิทธิ์ <span class="req">*</span></label>'
+            + '<select onchange="setPubField(' + p.id + ',\'claimDateType\',this.value)">'
+            + getClaimDateTypeOptions(p.tier, p.pubStatus, p.claimDateType)
+            + '</select></div>'
+            + '<div class="form-row"><label class="form-label">วันที่ใช้เคลมสิทธิ์ <span class="req">*</span></label>'
+            + '<input type="date" min="' + range.min + '" max="' + range.max + '" onchange="setPubField(' + p.id + ',\'claimDate\',this.value)" value="' + (p.claimDate || '') + '">'
+            + '<span class="form-hint">' + range.hint + '</span></div>'
+            + '</div>';
+        }
+
+        return '<div class="pub-item' + (p.isOpen ? ' open' : '') + '" id="pub-' + p.id + '">'
           + '<div class="pub-item-hdr" onclick="togglePub(' + p.id + ')">'
           + '<span class="pub-index">' + String(i + 1).padStart(2, '0') + '</span>'
           + '<span class="pub-title-preview" id="pub-prev-' + p.id + '">' + (esc(p.title) || '(ยังไม่ได้กรอกชื่อผลงาน)') + '</span>'
@@ -2640,6 +2812,8 @@
           + '<select onchange="setPubField(' + p.id + ',\'section\',this.value)">' + secSel + '</select></div>'
           + '<div class="form-row"><label class="form-label">ฐานข้อมูล / ระดับ <span class="req">*</span></label>'
           + '<select onchange="setPubField(' + p.id + ',\'tier\',this.value)"><option value="">-- เลือก --</option>' + tierSel + '</select></div></div>'
+          + statusRowHtml
+          + dateFieldsHtml
 
           + '<div class="form-row"><label class="form-label">ชื่อผลงาน <span class="req">*</span></label>'
           + '<textarea rows="2" placeholder="ชื่อบทความ / สิทธิบัตร / ผลงาน" oninput="setPubField(' + p.id + ',\'title\',this.value)">' + esc(p.title) + '</textarea></div>'
@@ -2774,7 +2948,7 @@
         var matchPubs = pubs.filter(function (p) { return rule.show(p); });
         if (!matchPubs.length) return null;
         var filled = matchPubs.filter(function (p) { return p.files[rule.key]; });
-        return { rule: rule, total: matchPubs.length, filled: filled.length };
+        return { rule: rule, total: matchPubs.length, filled: filled.length, matchingPubs: matchPubs };
       }).filter(Boolean);
 
       if (!el) return;
@@ -2787,9 +2961,14 @@
             : obj.rule.required
               ? '<span class="cl-status cl-missing">ขาด ' + (obj.total - obj.filled) + '/' + obj.total + '</span>'
               : '<span class="cl-status cl-opt">ไม่บังคับ ' + obj.filled + '/' + obj.total + '</span>';
+
+          var samplePub = obj.matchingPubs[0];
+          var labelVal = typeof obj.rule.label === 'function' ? obj.rule.label(samplePub) : obj.rule.label;
+          var hintVal = typeof obj.rule.hint === 'function' ? obj.rule.hint(samplePub) : obj.rule.hint;
+
           return '<div class="cl-row"><span class="cl-icon">' + obj.rule.icon + '</span>'
-            + '<div class="cl-body"><div class="cl-label">' + obj.rule.label + '</div>'
-            + '<div class="cl-sub">' + obj.rule.hint + '</div></div>' + status + '</div>';
+            + '<div class="cl-body"><div class="cl-label">' + labelVal + '</div>'
+            + '<div class="cl-sub">' + hintVal + '</div></div>' + status + '</div>';
         }).join('') + '</div>';
     }
 
@@ -2820,11 +2999,13 @@
       // Map publications without author column, with Thai translation for tier and role + Score column
       var rows = pubs.map(function (p, i) {
         var scoreVal = getPubScore(p, ctx.position, ctx.isAdmin, ctx.fieldGroup);
+        var claimDateStr = p.claimDate ? formatThaiDate(p.claimDate) : '—';
         return '<tr style="border-bottom:1px solid #eee">'
           + '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + (i + 1) + '</td>'
           + '<td style="padding:8px;border:1px solid #ddd">' + esc(p.title || '—') + '</td>'
           + '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + esc(getTierThai(p.tier)) + '</td>'
           + '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + esc(getRoleThai(p.role).join(', ')) + '</td>'
+          + '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + claimDateStr + '</td>'
           + '<td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:bold">' + scoreVal + '%</td></tr>';
       }).join('');
 
@@ -2832,7 +3013,7 @@
       var totalPct = Math.round(res.score * 100);
       var passStatusText = res.pass ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์';
       rows += '<tr style="font-weight:bold;background:#f8f9fa;border-top:2px solid #333">'
-        + '<td colspan="4" style="padding:8px;border:1px solid #ddd;text-align:right">คะแนนสะสมรวม:</td>'
+        + '<td colspan="5" style="padding:8px;border:1px solid #ddd;text-align:right">คะแนนสะสมรวม:</td>'
         + '<td style="padding:8px;border:1px solid #ddd;text-align:center;color:' + (res.pass ? '#2e7d32' : '#c62828') + '">' + totalPct + '% (' + passStatusText + ')</td></tr>';
 
       var thaiMonths = [
@@ -2883,9 +3064,10 @@
         + '<thead><tr style="background:#f8f9fa;border-top:1px solid #333;border-bottom:1px solid #333">'
         + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:40px">ลำดับ</th>'
         + '<th style="padding:8px;border:1px solid #ddd;text-align:left">ชื่อผลงานทางวิชาการ</th>'
-        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:150px">ฐานข้อมูล / ระดับ</th>'
-        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:120px">บทบาท</th>'
-        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:100px">คะแนน (%)</th></tr></thead>'
+        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:130px">ฐานข้อมูล / ระดับ</th>'
+        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:110px">บทบาท</th>'
+        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:100px">วันที่เคลมสิทธิ์</th>'
+        + '<th style="padding:8px;border:1px solid #ddd;text-align:center;width:80px">คะแนน (%)</th></tr></thead>'
         + '<tbody>' + rows + '</tbody></table>'
 
         + calcHtml
@@ -3015,6 +3197,51 @@
       var ctx = getCtx();
       var res = computeEligibility(pubs, ctx.position, ctx.isAdmin, ctx.fieldGroup);
 
+      // Check if all required files and dates are complete
+      var missingFiles = [];
+      var missingDates = [];
+      var invalidDates = [];
+
+      var range = getClaimDateRange();
+      var minClaimTime = new Date(range.min).getTime();
+      var maxClaimTime = new Date(range.max).getTime();
+
+      pubs.forEach(function (p, i) {
+        var isJournalOrProc = ['scopus_q1', 'scopus_q2', 'scopus_q3', 'scopus_q4', 'tci_1', 'review_article', 'book_chapter', 'full_proc'].includes(p.tier);
+        if (isJournalOrProc) {
+          if (!p.claimDate) {
+            missingDates.push('ผลงานลำดับที่ ' + (i + 1));
+          } else {
+            var claimTime = new Date(p.claimDate).getTime();
+            if (claimTime < minClaimTime || claimTime > maxClaimTime) {
+              invalidDates.push('ผลงานลำดับที่ ' + (i + 1));
+            }
+          }
+        }
+
+        var slots = ATTACH_RULES.filter(function (r) { return r.show(p); });
+        var reqSlots = slots.filter(function (r) { return r.required; });
+        var filled = reqSlots.filter(function (r) { return p.files[r.key]; });
+        if (filled.length < reqSlots.length) {
+          missingFiles.push('ผลงานลำดับที่ ' + (i + 1));
+        }
+      });
+
+      if (missingDates.length > 0) {
+        toast('กรุณาระบุวันที่ใช้เคลมสิทธิ์ สำหรับ: ' + missingDates.join(', '), 'error');
+        return;
+      }
+
+      if (invalidDates.length > 0) {
+        toast('วันที่ใช้เคลมสิทธิ์' + range.hint.replace('ต้อง', '') + ' สำหรับ: ' + invalidDates.join(', '), 'error');
+        return;
+      }
+
+      if (missingFiles.length > 0) {
+        toast('กรุณาแนบเอกสารที่จำเป็นให้ครบถ้วน สำหรับ: ' + missingFiles.join(', '), 'error');
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'กำลังเตรียมไฟล์…';
 
@@ -3069,6 +3296,8 @@
               volume: p.volume,
               year: p.year,
               doi: p.doi,
+              claimDateType: p.claimDateType || '',
+              claimDate: p.claimDate || '',
               files: pFiles
             };
           });

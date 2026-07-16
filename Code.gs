@@ -241,9 +241,12 @@ function submitApplication(data) {
     pubSheet.appendRow([
       'Timestamp', 'Email', 'Fiscal_Year', 'Round', 'Title', 
       'Section', 'Database_Tier', 'Role', 'Venue', 'Volume_Issue', 
-      'Publish_Year', 'DOI', 'Attachments'
+      'Publish_Year', 'DOI', 'Attachments', 'Claim_Date_Type', 'Claim_Date'
     ]);
-    pubSheet.getRange(1, 1, 1, 13).setFontWeight('bold').setBackground('#f3f3f3');
+    pubSheet.getRange(1, 1, 1, 15).setFontWeight('bold').setBackground('#f3f3f3');
+  } else if (pubSheet.getLastColumn() === 13) {
+    pubSheet.getRange(1, 14).setValue('Claim_Date_Type').setFontWeight('bold').setBackground('#f3f3f3');
+    pubSheet.getRange(1, 15).setValue('Claim_Date').setFontWeight('bold').setBackground('#f3f3f3');
   }
   
   if (data.pubs && data.pubs.length > 0) {
@@ -306,7 +309,9 @@ function submitApplication(data) {
         p.volume,
         p.year,
         p.doi,
-        '' // Placeholder for links
+        '', // Placeholder for links (Column 13)
+        p.claimDateType || '', // Column 14
+        p.claimDate || '' // Column 15
       ]);
       
       var lastRow = pubSheet.getLastRow();
