@@ -866,21 +866,38 @@ function getSubmissionDebugInfo(email) {
   return info;
 }
 
+function normalizeDateToAD(dateStr) {
+  if (!dateStr || dateStr === '—' || dateStr === '') return '';
+  var parts = String(dateStr).trim().split('-');
+  if (parts.length !== 3) return dateStr;
+  var year = parseInt(parts[0], 10);
+  var month = parts[1];
+  var day = parts[2];
+  if (isNaN(year)) return dateStr;
+  if (year > 2400) {
+    year = year - 543;
+  }
+  return year + '-' + month + '-' + day;
+}
+
 function formatThaiDate(dateStr) {
   if (!dateStr || dateStr === '—' || dateStr === '') return '—';
-  var parts = dateStr.split('-');
+  var normalized = normalizeDateToAD(dateStr);
+  var parts = normalized.split('-');
   if (parts.length !== 3) return dateStr;
 
   var year = parseInt(parts[0], 10);
   var monthIdx = parseInt(parts[1], 10) - 1;
   var day = parseInt(parts[2], 10);
 
+  if (isNaN(year) || isNaN(monthIdx) || isNaN(day)) return dateStr;
+
   var thaiMonths = [
     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
   ];
 
-  return day + ' ' + thaiMonths[monthIdx] + ' ' + (year + 543);
+  return day + ' ' + (thaiMonths[monthIdx] || '') + ' ' + (year + 543);
 }
 
 function getCritKeyFromTierTh(tierTh) {

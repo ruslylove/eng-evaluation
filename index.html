@@ -2053,7 +2053,7 @@
         details.push({ type: critKey, count: items.length, target: target, contribution: contrib, label: CRITERIA_LABELS[critKey] || critKey });
       });
 
-      return { pass: totalScore >= 1.0, score: Math.min(totalScore, 9.99), details: details, warnings: warnings };
+      return { pass: totalScore >= 0.9999, score: Math.min(totalScore, 9.99), details: details, warnings: warnings };
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -2596,6 +2596,9 @@
     function setPubField(id, field, val) {
       var p = pubs.find(function (p) { return p.id === id; });
       if (!p) return;
+      if (field === 'claimDate') {
+        val = normalizeDateToAD(val);
+      }
       p[field] = val;
       if (field === 'title') {
         var el = document.getElementById('pub-prev-' + id);
@@ -2748,7 +2751,7 @@
       return {
         min: minStr,
         max: maxStr,
-        hint: 'ต้องอยู่ระหว่าง ' + getShortThaiDate(minStr) + ' – ' + getShortThaiDate(maxStr)
+        hint: 'ต้องอยู่ระหว่าง ' + getShortThaiDate(minStr) + ' – ' + getShortThaiDate(maxStr) + ' (รองรับทั้ง พ.ศ. และ ค.ศ. ระบบจะแปลงให้อัตโนมัติ)'
       };
     }
 
@@ -2854,7 +2857,7 @@
 
       // Support both id schemes (sc-status from new HTML, eligibility-status from old)
       var sc = document.getElementById('sc-status') || document.getElementById('eligibility-status');
-      var stxt = document.getElementById('eligibility-text');
+      var stxt = document.getElementById('sc-text') || document.getElementById('eligibility-text');
       var tbody = document.getElementById('tier-tbody');
       var prog = document.getElementById('sc-prog-wrap');
       var bar = document.getElementById('sc-bar');
@@ -3211,8 +3214,10 @@
           if (!p.claimDate) {
             missingDates.push('ผลงานลำดับที่ ' + (i + 1));
           } else {
-            var claimTime = new Date(p.claimDate).getTime();
-            if (claimTime < minClaimTime || claimTime > maxClaimTime) {
+            var normDate = normalizeDateToAD(p.claimDate);
+            p.claimDate = normDate;
+            var claimTime = new Date(normDate).getTime();
+            if (isNaN(claimTime) || claimTime < minClaimTime || claimTime > maxClaimTime) {
               invalidDates.push('ผลงานลำดับที่ ' + (i + 1));
             }
           }
@@ -3390,21 +3395,38 @@
 
     function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+    function normalizeDateToAD(dateStr) {
+      if (!dateStr || dateStr === '—' || dateStr === '') return '';
+      var parts = String(dateStr).trim().split('-');
+      if (parts.length !== 3) return dateStr;
+      var year = parseInt(parts[0], 10);
+      var month = parts[1];
+      var day = parts[2];
+      if (isNaN(year)) return dateStr;
+      if (year > 2400) {
+        year = year - 543;
+      }
+      return year + '-' + month + '-' + day;
+    }
+
     function formatThaiDate(dateStr) {
       if (!dateStr || dateStr === '—' || dateStr === '') return '—';
-      var parts = dateStr.split('-');
+      var normalized = normalizeDateToAD(dateStr);
+      var parts = normalized.split('-');
       if (parts.length !== 3) return dateStr;
 
       var year = parseInt(parts[0], 10);
       var monthIdx = parseInt(parts[1], 10) - 1;
       var day = parseInt(parts[2], 10);
 
+      if (isNaN(year) || isNaN(monthIdx) || isNaN(day)) return dateStr;
+
       var thaiMonths = [
         'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
         'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
       ];
 
-      return day + ' ' + thaiMonths[monthIdx] + ' ' + (year + 543);
+      return day + ' ' + (thaiMonths[monthIdx] || '') + ' ' + (year + 543);
     }
 
     function getTierThai(tierKey) {
